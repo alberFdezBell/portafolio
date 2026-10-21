@@ -1,8 +1,6 @@
 services:
   portfolio:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/alberfdezbell/portafolio:latest
     container_name: alber-portfolio
     restart: unless-stopped
     ports:

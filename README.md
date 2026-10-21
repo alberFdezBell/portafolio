@@ -27,7 +27,23 @@ Repositorio oficial: [https://github.com/alberFdezBell/portafolio](https://githu
   - Metaetiquetas OpenGraph y Twitter Cards dinámicas.
   - Datos estructurados Schema.org (**Person** y **WebSite** JSON-LD).
   - Generación automática de `sitemap.xml` y `robots.txt`.
-- **Despliegue Autónomo:** Todo empaquetado en un único contenedor Docker ligero sobre el puerto 1886, con base de datos SQLite en volumen persistente.
+- **Despliegue Autónomo y Ultra-Rápido:** Compilación automática en GitHub Actions y publicación en GitHub Container Registry (`ghcr.io`). Tu Portainer ya no compila: descarga la imagen lista en **~10 segundos** sobre el puerto 1886.
+
+---
+
+## ⚡ Automatización CI/CD con GitHub Actions
+
+Cada vez que haces `git push` a la rama `main`:
+1. Una GitHub Action ultrarrápida compila la imagen Docker en la infraestructura de GitHub usando caché BuildKit.
+2. Sube la imagen a GitHub Container Registry: `ghcr.io/alberfdezbell/portafolio:latest`.
+3. Tu Portainer solo necesita descargar la imagen precompilada (`docker pull`), tardando apenas unos segundos en reiniciar el stack.
+
+> [!TIP]
+> **Visibilidad del Paquete en GitHub:**
+> La primera vez que la Action se ejecute, se creará el paquete en tu perfil de GitHub:
+> 1. Ve a [github.com/alberFdezBell?tab=packages](https://github.com/alberFdezBell?tab=packages) o a la derecha de tu repositorio en **Packages**.
+> 2. Entra en `portafolio` ➔ **Package settings**.
+> 3. Al final, en **Danger Zone**, puedes cambiar la visibilidad a **Public** para que Portainer descargue la imagen sin necesidad de configurar credenciales de registro, o añadir un registro en Portainer con tu PAT.
 
 ---
 
