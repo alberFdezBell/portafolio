@@ -38,7 +38,7 @@ export function Hero({
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/30 text-xs font-mono text-emerald-400">
               <span className="text-emerald-500 font-bold">$</span>
               <span>cat engineer_profile.json</span>
-              <span className="w-2 h-4 bg-emerald-400 animate-pulse ml-1" />
+              <span className="inline-block w-2 h-3.5 bg-emerald-400 terminal-cursor ml-1" />
             </div>
 
             {/* Title & Name */}
