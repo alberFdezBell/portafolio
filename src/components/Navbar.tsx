@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Terminal, Shield, Menu, X, Code2 } from "lucide-react";
+import { Terminal, Shield, Menu, X } from "lucide-react";
 
 interface NavbarProps {
   statusBadge?: string;

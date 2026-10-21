@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Briefcase, Calendar, MapPin } from "lucide-react";
+// Lucide icons removed in favor of clean editorial typography
 import { ScrollReveal, StaggerContainer, StaggerItem } from "./ScrollReveal";
 
 export interface ExperienceItem {
@@ -22,29 +22,29 @@ interface ExperienceSectionProps {
 
 export function ExperienceSection({ experiences }: ExperienceSectionProps) {
   return (
-    <section id="experiencia" className="py-24 border-t border-white/5 relative">
+    <section id="experiencia" className="py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
-        {/* Section Header */}
+        {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col items-start gap-2 mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400">
-              <Briefcase size={14} />
-              <span>02 // TRAYECTORIA LABORAL</span>
+          <div className="flex flex-col items-start mb-16">
+            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
+              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+              <span>02 / Carrera & Experiencia</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              Experiencia Profesional
+            <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
+              Trayectoria Profesional
             </h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono">
-              Empresas, roles clave y proyectos donde he aportado valor y liderado soluciones técnicas.
+            <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono mt-3">
+              Empresas, roles de impacto y soluciones de ingeniería construidas para producción.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Timeline with Staggered Scroll Reveal */}
+        {/* Open Editorial Timeline / Dossier (No Heavy Cards) */}
         <StaggerContainer
-          staggerDelay={0.09}
-          className="relative border-l border-white/10 ml-4 sm:ml-6 space-y-12"
+          staggerDelay={0.08}
+          className="space-y-12 sm:space-y-16"
         >
           {experiences.map((exp) => {
             let parsedSkills: string[] = [];
@@ -55,58 +55,53 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
             }
 
             return (
-              <StaggerItem key={exp.id} yOffset={24}>
-                <div className="relative pl-8 sm:pl-10 group">
-                  {/* Timeline node */}
-                  <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-[#090d16] border-2 border-emerald-400 group-hover:scale-125 transition-transform" />
+              <StaggerItem key={exp.id} yOffset={20}>
+                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 group">
+                  
+                  {/* Left Column: Metadata (Period, Company, Location) */}
+                  <div className="lg:col-span-4 space-y-2 font-mono">
+                    <span className="inline-block text-xs text-emerald-400 font-semibold tracking-wide">
+                      {exp.start_date} — {exp.is_current ? "Presente" : exp.end_date}
+                    </span>
+                    <h4 className="text-lg font-bold text-white tracking-tight">
+                      {exp.company}
+                    </h4>
+                    {exp.location && (
+                      <p className="text-xs text-slate-500">
+                        {exp.location}
+                      </p>
+                    )}
+                  </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-[#0d1322]/90 p-6 sm:p-7 shadow-xl hover:border-emerald-500/30 transition-all duration-300">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
-                      <div>
-                        <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
-                          {exp.role}
-                        </h3>
-                        <p className="text-sm font-semibold text-emerald-400 font-mono mt-0.5">
-                          {exp.company}
-                        </p>
-                      </div>
+                  {/* Right Column: Role, Narrative & Technologies */}
+                  <div className="lg:col-span-8 space-y-4">
+                    <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                      {exp.role}
+                    </h3>
 
-                      <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-                        {exp.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin size={12} className="text-slate-500" />
-                            {exp.location}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800/80 border border-white/5 text-slate-300">
-                          <Calendar size={12} className="text-emerald-400" />
-                          {exp.start_date} — {exp.is_current ? "Presente" : exp.end_date}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Description */}
                     {exp.description && (
-                      <p className="text-sm sm:text-base text-slate-300 leading-relaxed mt-4 whitespace-pre-line">
+                      <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed whitespace-pre-line font-normal">
                         {exp.description}
                       </p>
                     )}
 
-                    {/* Tech stack pills */}
+                    {/* Tech stack as clean inline tags (no nested pill containers) */}
                     {parsedSkills.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pt-4 mt-4 border-t border-white/5">
+                      <div className="pt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-xs text-slate-400">
+                        <span className="text-slate-600 font-semibold">Tech:</span>
                         {parsedSkills.map((skill, idx) => (
                           <span
                             key={idx}
-                            className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs font-mono text-slate-300 hover:text-emerald-300 hover:border-emerald-500/30 transition-colors"
+                            className="text-slate-400 hover:text-emerald-300 transition-colors"
                           >
-                            {skill}
+                            <span className="text-emerald-500/50">/</span> {skill}
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
+
+                </article>
               </StaggerItem>
             );
           })}

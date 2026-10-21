@@ -81,21 +81,21 @@ export function Hero({
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3.5 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <a
               href="#proyectos"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-200 shadow-lg shadow-emerald-500/20 active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-200 shadow-md shadow-emerald-500/15 active:scale-95"
             >
               <span>Explorar Proyectos</span>
-              <ArrowDown size={16} />
+              <ArrowDown size={15} />
             </a>
 
             <a
               href="#contacto"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-slate-900/60 hover:bg-slate-800 text-white font-medium text-sm transition-all duration-200 hover:border-white/20 active:scale-95 font-mono"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-all duration-200 active:scale-95 font-mono"
             >
               <span>Contacto</span>
-              <span className="text-slate-500">→</span>
+              <ArrowDown size={15} />
             </a>
 
             {githubUrl && (
@@ -103,10 +103,10 @@ export function Hero({
                 href={githubUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="p-3 rounded-xl border border-white/10 bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all duration-200 hover:border-white/20"
+                className="p-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-200"
                 aria-label="GitHub de Alberto"
               >
-                <DynamicIcon name="github" size={20} />
+                <DynamicIcon name="github" size={18} />
               </a>
             )}
 
@@ -115,32 +115,41 @@ export function Hero({
                 href={linkedinUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="p-3 rounded-xl border border-white/10 bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all duration-200 hover:border-white/20"
+                className="p-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-200"
                 aria-label="LinkedIn de Alberto"
               >
-                <DynamicIcon name="linkedin" size={20} />
+                <DynamicIcon name="linkedin" size={18} />
               </a>
             )}
           </div>
 
-          {/* Technical Quick Metrics */}
-          <div className="pt-8 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs text-slate-400 max-w-2xl">
-            <div className="space-y-1 p-3 rounded-xl bg-slate-900/40 border border-white/5">
+          {/* Technical Quick Metrics (Open Editorial Layout, No Nested Cards) */}
+          <div className="pt-10 border-t border-white/10 flex flex-wrap items-center gap-8 sm:gap-12 font-mono text-xs text-slate-400">
+            <div className="space-y-1">
               <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Despliegue</span>
-              <span className="text-white font-semibold flex items-center gap-1.5">
-                <Server size={14} className="text-emerald-400" /> Portainer :1886
+              <span className="text-white font-medium flex items-center gap-2 text-sm">
+                <Server size={15} className="text-emerald-400" />
+                Portainer <span className="text-slate-500">:1886</span>
               </span>
             </div>
-            <div className="space-y-1 p-3 rounded-xl bg-slate-900/40 border border-white/5">
+
+            <div className="hidden sm:block h-8 w-px bg-white/10" aria-hidden="true" />
+
+            <div className="space-y-1">
               <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Arquitectura</span>
-              <span className="text-white font-semibold flex items-center gap-1.5">
-                <Cpu size={14} className="text-cyan-400" /> Next.js 15 & Docker
+              <span className="text-white font-medium flex items-center gap-2 text-sm">
+                <Cpu size={15} className="text-cyan-400" />
+                Next.js 15 & Docker
               </span>
             </div>
-            <div className="space-y-1 p-3 rounded-xl bg-slate-900/40 border border-white/5">
+
+            <div className="hidden sm:block h-8 w-px bg-white/10" aria-hidden="true" />
+
+            <div className="space-y-1">
               <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Seguridad</span>
-              <span className="text-white font-semibold flex items-center gap-1.5">
-                <GitBranch size={14} className="text-emerald-400" /> 2FA TOTP Active
+              <span className="text-white font-medium flex items-center gap-2 text-sm">
+                <GitBranch size={15} className="text-emerald-400" />
+                2FA TOTP Activo
               </span>
             </div>
           </div>

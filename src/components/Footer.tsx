@@ -19,13 +19,14 @@ export function Footer() {
           </span>
         </div>
 
-        {/* Portainer & Stack badges */}
-        <div className="flex items-center gap-4 text-[11px] text-slate-500">
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
+        {/* Portainer & Stack indicators */}
+        <div className="flex items-center gap-4 text-xs text-slate-400 font-mono">
+          <span className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Portainer Stack // Port 1886
+            Portainer Stack :1886
           </span>
-          <span className="hidden md:inline">SQLite WAL Mode</span>
+          <span className="text-slate-600">/</span>
+          <span className="hidden md:inline text-slate-500">SQLite WAL Mode</span>
         </div>
 
         {/* Right */}
