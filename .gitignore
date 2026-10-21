@@ -1,0 +1,29 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+/build
+
+# local database & uploads
+/data/*.db*
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# environment variables
+.env*.local
+.env
+!.env.example
+
+# debug & misc
+*.log
+.DS_Store
+*.pem
+*.tsbuildinfo
+next-env.d.ts

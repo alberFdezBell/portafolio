@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  portfolio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alber-portfolio
+    restart: unless-stopped
+    ports:
+      - "1886:1886"
+    environment:
+      - PORT=1886
+      - NODE_ENV=production
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin1234}
+      - AUTH_SECRET=${AUTH_SECRET:-super-secret-key-replace-in-portainer-1886}
+      - TOTP_SECRET=${TOTP_SECRET:-}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:1886}
+    volumes:
+      - portfolio_data:/app/data
+      - portfolio_uploads:/app/public/uploads
+
+volumes:
+  portfolio_data:
+    name: portfolio_db_data
+  portfolio_uploads:
+    name: portfolio_public_uploads

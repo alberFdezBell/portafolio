@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.gitignore
+*.log
+data/*.db
+data/*.db-journal
+data/*.db-wal
+public/uploads/*
+!public/uploads/.gitkeep
+tests
+vitest*
