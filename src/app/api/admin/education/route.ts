@@ -3,6 +3,9 @@ import { isAuthenticated } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export async function GET() {
+  const authed = await isAuthenticated();
+  if (!authed) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   const db = getDb();
   const education = db.prepare("SELECT * FROM education ORDER BY order_num ASC, id DESC").all();
   return NextResponse.json(education);

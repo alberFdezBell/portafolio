@@ -3,6 +3,11 @@ import { isAuthenticated } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export async function GET() {
+  const authed = await isAuthenticated();
+  if (!authed) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const db = getDb();
   const profile = db.prepare("SELECT * FROM profile WHERE id = 1").get();
   return NextResponse.json(profile || {});

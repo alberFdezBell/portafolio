@@ -69,7 +69,13 @@ export default function AdminDashboardPage() {
         fetch("/api/admin/social"),
       ]);
 
-      if (resProf.status === 401) {
+      if (
+        resProf.status === 401 ||
+        resExp.status === 401 ||
+        resEdu.status === 401 ||
+        resProj.status === 401 ||
+        resSoc.status === 401
+      ) {
         router.push("/login");
         return;
       }
@@ -89,6 +95,10 @@ export default function AdminDashboardPage() {
   const fetch2FA = async () => {
     try {
       const res = await fetch("/api/admin/auth/setup-2fa");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (res.ok) {
         setTwoFactorData(await res.json());
       }

@@ -82,9 +82,11 @@ export function getTotpSecret(): { secret: string; isConfigured: boolean } {
   }
 
   const db = getDb();
-  const row = db.prepare("SELECT value FROM settings WHERE key = 'totp_secret'").get() as { value: string } | undefined;
-  if (row && row.value) {
-    return { secret: row.value, isConfigured: true };
+  const secretRow = db.prepare("SELECT value FROM settings WHERE key = 'totp_secret'").get() as { value: string } | undefined;
+  const configuredRow = db.prepare("SELECT value FROM settings WHERE key = 'totp_configured'").get() as { value: string } | undefined;
+
+  if (secretRow && secretRow.value) {
+    return { secret: secretRow.value, isConfigured: configuredRow?.value === "1" };
   }
 
   const newSecret = generateSecret();

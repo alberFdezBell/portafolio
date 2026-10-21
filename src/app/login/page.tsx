@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Terminal, Shield, KeyRound, Lock, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Shield, Lock, ArrowRight, AlertCircle, CheckCircle2, QrCode } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [totpToken, setTotpToken] = useState("");
+  const [isFirstSetup, setIsFirstSetup] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [secretData, setSecretData] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -34,6 +38,9 @@ export default function LoginPage() {
         throw new Error(data.error || "Credenciales incorrectas");
       }
 
+      setIsFirstSetup(!!data.isFirstSetup);
+      if (data.qrCode) setQrCodeData(data.qrCode);
+      if (data.secret) setSecretData(data.secret);
       setStep("totp");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
@@ -64,7 +71,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push("/admin");
         router.refresh();
-      }, 1000);
+      }, 800);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al verificar 2FA");
     } finally {
@@ -107,7 +114,9 @@ export default function LoginPage() {
               <p className="text-xs font-mono text-slate-400">
                 {step === "credentials"
                   ? "Paso 1/2: Credenciales de entorno Portainer"
-                  : "Paso 2/2: Código de verificación Authenticator (TOTP)"}
+                  : isFirstSetup
+                  ? "Configuración inicial de 2FA Authenticator"
+                  : "Paso 2/2: Código de verificación Authenticator"}
               </p>
             </div>
 
@@ -178,31 +187,51 @@ export default function LoginPage() {
               </form>
             )}
 
-            {/* Step 2: TOTP Code Form */}
+            {/* Step 2: TOTP Code Form (with QR on first setup) */}
             {step === "totp" && (
               <form onSubmit={handleTotpSubmit} className="space-y-4">
-                <div className="space-y-2 text-center">
-                  <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-xs text-slate-400 leading-relaxed">
-                    Abre tu aplicación <span className="text-white font-semibold">Google Authenticator</span>, <span className="text-white font-semibold">Authy</span> o <span className="text-white font-semibold">Microsoft Authenticator</span> e introduce el código de 6 dígitos.
+                {isFirstSetup && qrCodeData && (
+                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                      <QrCode size={16} />
+                      <span>Primer Acceso: Escanea el QR</span>
+                    </div>
+                    <div className="inline-block p-2 rounded-xl bg-white shadow-lg">
+                      <img src={qrCodeData} alt="2FA QR Code" width={180} height={180} className="w-36 h-36 sm:w-44 sm:h-44" />
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Escanea este código con Google Authenticator o Authy en tu teléfono.
+                    </p>
+                    {secretData && (
+                      <div className="text-[10px] font-mono text-slate-400 select-all break-all bg-black/40 p-1.5 rounded border border-white/5">
+                        Clave: <span className="text-emerald-400">{secretData}</span>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  <div className="pt-2">
-                    <label className="block text-xs font-mono text-slate-300 mb-1.5">
-                      Código TOTP (6 dígitos)
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={6}
-                      autoFocus
-                      required
-                      value={totpToken}
-                      onChange={(e) => setTotpToken(e.target.value)}
-                      placeholder="123456"
-                      className="w-full text-center tracking-[0.5em] text-2xl font-mono py-3 rounded-xl border border-emerald-500/40 bg-slate-900 text-emerald-400 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
+                {!isFirstSetup && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-xs text-slate-400 leading-relaxed text-center">
+                    Abre tu aplicación <span className="text-white font-semibold">Google Authenticator</span> o <span className="text-white font-semibold">Authy</span> e introduce el código temporal de 6 dígitos.
                   </div>
+                )}
+
+                <div className="pt-1 text-center">
+                  <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                    Código TOTP (6 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    autoFocus
+                    required
+                    value={totpToken}
+                    onChange={(e) => setTotpToken(e.target.value)}
+                    placeholder="123456"
+                    className="w-full text-center tracking-[0.5em] text-2xl font-mono py-2.5 rounded-xl border border-emerald-500/40 bg-slate-900 text-emerald-400 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
                 </div>
 
                 <button

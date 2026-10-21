@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/db";
 import {
   checkRateLimit,
   recordFailedAttempt,
@@ -45,8 +46,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Success: reset rate limit and set secure session cookie
+    // Success: reset rate limit, mark TOTP configured and set secure session cookie
     resetRateLimit(ip);
+    const db = getDb();
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('totp_configured', '1')").run();
+
     const sessionToken = createSessionToken(username);
 
     const response = NextResponse.json({

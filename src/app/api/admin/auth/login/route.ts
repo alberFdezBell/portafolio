@@ -6,6 +6,8 @@ import {
   getAdminCredentials,
   getTotpSecret,
 } from "@/lib/auth";
+import { generateURI } from "otplib";
+import QRCode from "qrcode";
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,10 +39,26 @@ export async function POST(req: NextRequest) {
     // Credentials are correct. Prompt for 2FA TOTP code!
     const totpInfo = getTotpSecret();
 
+    let qrCode: string | null = null;
+    if (!totpInfo.isConfigured) {
+      const otpAuthUrl = generateURI({
+        issuer: "Portafolio Alberto",
+        label: creds.username,
+        secret: totpInfo.secret,
+      });
+      qrCode = await QRCode.toDataURL(otpAuthUrl, {
+        margin: 2,
+        color: { dark: "#000000", light: "#ffffff" },
+        width: 220,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       requires2FA: true,
       isFirstSetup: !totpInfo.isConfigured,
+      qrCode,
+      secret: !totpInfo.isConfigured ? totpInfo.secret : undefined,
       message: "Credenciales válidas. Ingresa tu código 2FA.",
     });
   } catch (err: unknown) {
