@@ -34,13 +34,13 @@ export function Hero({
 
     if (charIndex >= fullText.length) return;
 
-    // Natural random typing delay per character
+    // Fast & natural random typing delay per character
     const currentChar = fullText[charIndex];
-    let delay = Math.floor(Math.random() * 55) + 45; // 45ms - 100ms
+    let delay = Math.floor(Math.random() * 20) + 22; // 22ms - 42ms
 
-    // Natural pause on punctuation or spaces
+    // Subtle pause on punctuation or spaces
     if (currentChar === " " || currentChar === ",") {
-      delay += 120;
+      delay += 50;
     }
 
     const timer = setTimeout(() => {
