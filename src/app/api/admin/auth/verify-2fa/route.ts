@@ -58,9 +58,13 @@ export async function POST(req: NextRequest) {
       message: "Autenticación de doble factor completada con éxito.",
     });
 
+    const isHttps =
+      req.headers.get("x-forwarded-proto") === "https" ||
+      req.nextUrl.protocol === "https:";
+
     response.cookies.set("portfolio_session", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours

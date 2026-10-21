@@ -1,13 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, Lock, ArrowRight, AlertCircle, CheckCircle2, QrCode } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [step, setStep] = useState<"credentials" | "totp">("credentials");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -69,9 +66,8 @@ export default function LoginPage() {
 
       setSuccess("Autenticación completada. Redirigiendo al panel...");
       setTimeout(() => {
-        router.push("/admin");
-        router.refresh();
-      }, 800);
+        window.location.href = "/admin";
+      }, 400);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al verificar 2FA");
     } finally {
