@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowDown, GitBranch, Server, Cpu } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { DynamicIcon } from "./DynamicIcon";
 
 interface HeroProps {
@@ -121,37 +121,6 @@ export function Hero({
                 <DynamicIcon name="linkedin" size={18} />
               </a>
             )}
-          </div>
-
-          {/* Technical Quick Metrics (Open Editorial Layout, No Nested Cards) */}
-          <div className="pt-10 border-t border-white/10 flex flex-wrap items-center gap-8 sm:gap-12 font-mono text-xs text-slate-400">
-            <div className="space-y-1">
-              <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Despliegue</span>
-              <span className="text-white font-medium flex items-center gap-2 text-sm">
-                <Server size={15} className="text-emerald-400" />
-                Portainer <span className="text-slate-500">:1886</span>
-              </span>
-            </div>
-
-            <div className="hidden sm:block h-8 w-px bg-white/10" aria-hidden="true" />
-
-            <div className="space-y-1">
-              <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Arquitectura</span>
-              <span className="text-white font-medium flex items-center gap-2 text-sm">
-                <Cpu size={15} className="text-cyan-400" />
-                Next.js 15 & Docker
-              </span>
-            </div>
-
-            <div className="hidden sm:block h-8 w-px bg-white/10" aria-hidden="true" />
-
-            <div className="space-y-1">
-              <span className="text-slate-500 block text-[11px] uppercase tracking-wider">Seguridad</span>
-              <span className="text-white font-medium flex items-center gap-2 text-sm">
-                <GitBranch size={15} className="text-emerald-400" />
-                2FA TOTP Activo
-              </span>
-            </div>
           </div>
 
         </div>

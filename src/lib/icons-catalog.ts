@@ -11,7 +11,7 @@ export interface IconItem {
 export const POPULAR_ICONS: IconItem[] = [
   // Social & Profiles
   { id: "github", name: "GitHub", category: "social", type: "simple-icon", slug: "github", cdnUrl: "https://cdn.simpleicons.org/github/ffffff", color: "#ffffff" },
-  { id: "linkedin", name: "LinkedIn", category: "social", type: "simple-icon", slug: "linkedin", cdnUrl: "https://cdn.simpleicons.org/linkedin/0A66C2", color: "#0A66C2" },
+  { id: "linkedin", name: "LinkedIn", category: "social", type: "simple-icon", slug: "linkedin", cdnUrl: "/icons/linkedin.svg", color: "#0A66C2" },
   { id: "x", name: "X (Twitter)", category: "social", type: "simple-icon", slug: "x", cdnUrl: "https://cdn.simpleicons.org/x/ffffff", color: "#ffffff" },
   { id: "twitter", name: "Twitter", category: "social", type: "simple-icon", slug: "twitter", cdnUrl: "https://cdn.simpleicons.org/twitter/1DA1F2", color: "#1DA1F2" },
   { id: "youtube", name: "YouTube", category: "social", type: "simple-icon", slug: "youtube", cdnUrl: "https://cdn.simpleicons.org/youtube/FF0000", color: "#FF0000" },
