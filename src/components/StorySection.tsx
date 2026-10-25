@@ -54,23 +54,27 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
     };
   }, [fullText.length]);
 
-  // Terminal typewriter typing effect
+  // Ultra-fast terminal typewriter typing effect
   useEffect(() => {
     if (!hasStarted) return;
     if (charIndex >= fullText.length) return;
 
-    const currentChar = fullText[charIndex];
+    // Fast terminal stream chunking: advance 3 to 4 characters per step
+    const charsRemaining = fullText.length - charIndex;
+    const step = Math.min(charsRemaining, Math.floor(Math.random() * 2) + 3);
+
+    const chunk = fullText.slice(charIndex, charIndex + step);
     let delay = Math.floor(Math.random() * 4) + 4; // 4ms - 8ms
 
-    // Natural rhythmic micro-pauses at punctuation & paragraphs
-    if (currentChar === " " || currentChar === ",") {
-      delay += 12;
-    } else if (currentChar === "." || currentChar === "\n") {
-      delay += 28;
+    // Subtle micro-pauses at punctuation & paragraphs for organic terminal rhythm
+    if (chunk.includes(".") || chunk.includes("\n")) {
+      delay += 16;
+    } else if (chunk.includes(",") || chunk.includes(" ")) {
+      delay += 6;
     }
 
     const timer = setTimeout(() => {
-      setCharIndex((prev) => prev + 1);
+      setCharIndex((prev) => Math.min(prev + step, fullText.length));
     }, delay);
 
     return () => clearTimeout(timer);
