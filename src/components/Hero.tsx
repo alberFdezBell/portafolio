@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowDown } from "lucide-react";
-import { DynamicIcon } from "./DynamicIcon";
 
 interface HeroProps {
   name: string;
@@ -16,8 +15,6 @@ interface HeroProps {
 
 export function Hero({
   name,
-  githubUrl,
-  linkedinUrl,
 }: HeroProps) {
   const targetName = name || "Alberto Fernández Bellido";
   const prefix = "Hola, soy ";
@@ -66,75 +63,45 @@ export function Hero({
 
   const typedPrefix = currentText.slice(0, prefixLength);
   const typedName = charIndex > prefixLength ? currentText.slice(prefixLength) : "";
+  const isCompleted = charIndex >= fullText.length;
 
   return (
-    <section className="relative pt-36 pb-24 md:pt-44 md:pb-32 overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-1/3 right-10 w-[450px] h-[280px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+    <section className="relative min-h-screen min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6">
+      {/* Background glow effects centered in viewport */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[450px] h-[280px] bg-cyan-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="space-y-10 text-left">
-          
-          {/* Headline: Natural Single-Line Terminal Typing */}
-          <div className="overflow-x-auto sm:overflow-visible py-1">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight min-h-[1.25em] whitespace-nowrap flex items-center">
-              <span>{typedPrefix}</span>
-              {typedName && (
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 ml-2 sm:ml-3">
-                  {typedName}
-                </span>
-              )}
-              {/* Terminal Blinking Cursor at typing position */}
-              <span className="inline-block w-2 sm:w-3.5 h-6 sm:h-9 lg:h-12 bg-emerald-400 terminal-cursor ml-2 align-middle shrink-0" />
-            </h1>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <a
-              href="#proyectos"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-200 shadow-md shadow-emerald-500/15 active:scale-95"
-            >
-              <span>Explorar Proyectos</span>
-              <ArrowDown size={15} />
-            </a>
-
-            <a
-              href="#contacto"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-all duration-200 active:scale-95 font-mono"
-            >
-              <span>Contacto</span>
-              <ArrowDown size={15} />
-            </a>
-
-            {githubUrl && (
-              <a
-                href={githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-200"
-                aria-label="GitHub de Alberto"
-              >
-                <DynamicIcon name="github" size={18} />
-              </a>
-            )}
-
-            {linkedinUrl && (
-              <a
-                href={linkedinUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-200"
-                aria-label="LinkedIn de Alberto"
-              >
-                <DynamicIcon name="linkedin" size={18} />
-              </a>
-            )}
-          </div>
-
-        </div>
+      {/* Main Single-Line Headline (Centered Fullscreen) */}
+      <div className="max-w-5xl mx-auto px-4 text-center z-10">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight flex flex-wrap items-center justify-center">
+          <span>{typedPrefix}</span>
+          {typedName && (
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 ml-2 sm:ml-3">
+              {typedName}
+            </span>
+          )}
+          {/* Terminal Blinking Cursor at typing position */}
+          <span className="inline-block w-2 sm:w-3.5 h-7 sm:h-11 lg:h-14 bg-emerald-400 terminal-cursor ml-2 sm:ml-3 align-middle shrink-0" />
+        </h1>
       </div>
+
+      {/* Bottom Interactive Arrow Button (Appears when typing completes) */}
+      <a
+        href="#historia"
+        aria-label="Desplazarse a la primera sección (Historia)"
+        className={`absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 group cursor-pointer transition-all duration-700 z-20 ${
+          isCompleted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-black group-hover:border-emerald-400 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg shadow-emerald-500/20 animate-bounce">
+          {/* Subtle pulsating radar ring */}
+          <span className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping pointer-events-none" />
+          <ArrowDown size={20} className="stroke-[2.5] relative z-10" />
+        </div>
+        <span className="text-[11px] font-mono tracking-widest uppercase text-slate-400 group-hover:text-emerald-400 transition-colors select-none">
+          Continuar
+        </span>
+      </a>
     </section>
   );
 }

@@ -21,7 +21,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
   const [hasStarted, setHasStarted] = useState(false);
   const [charIndex, setCharIndex] = useState(0);
 
-  // Synchronize start trigger with Hero typing completion
+  // Synchronize start trigger: start when Hero has completed AND section is in view
   useEffect(() => {
     // If user prefers reduced motion, show full text immediately
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -30,27 +30,41 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
       return;
     }
 
-    // Check if Hero already finished typing
-    if (typeof window !== "undefined" && (window as any).__heroTypingComplete) {
-      setHasStarted(true);
-      return;
-    }
+    const sectionEl = document.getElementById("historia");
 
-    // Listen to custom event dispatched when Hero finishes
-    const handleHeroComplete = () => {
+    const startTyping = () => {
       setHasStarted(true);
     };
 
-    window.addEventListener("hero-typing-complete", handleHeroComplete);
+    // Trigger when user scrolls / navigates to this section
+    if ("IntersectionObserver" in window && sectionEl) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const [entry] = entries;
+          if (entry.isIntersecting) {
+            if ((window as any).__heroTypingComplete) {
+              startTyping();
+            } else {
+              window.addEventListener("hero-typing-complete", startTyping, { once: true });
+            }
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(sectionEl);
+      return () => observer.disconnect();
+    }
 
-    // Fallback timer: start after 2s even if event was missed
-    const fallbackTimer = setTimeout(() => {
-      setHasStarted(true);
-    }, 2000);
+    // Fallback for environments without IntersectionObserver
+    if ((window as any).__heroTypingComplete) {
+      startTyping();
+      return;
+    }
 
+    window.addEventListener("hero-typing-complete", startTyping, { once: true });
     return () => {
-      window.removeEventListener("hero-typing-complete", handleHeroComplete);
-      clearTimeout(fallbackTimer);
+      window.removeEventListener("hero-typing-complete", startTyping);
     };
   }, [fullText.length]);
 
