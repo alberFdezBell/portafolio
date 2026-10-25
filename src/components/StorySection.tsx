@@ -118,21 +118,10 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
 
         {/* Narrative Article with Floating Image Wrap & Live Typewriter */}
         <ScrollReveal delay={0.08} yOffset={24}>
-          <article
-            onClick={() => setCharIndex(fullText.length)}
-            title="Haz clic para autocompletar la historia"
-            className="border-l-2 border-emerald-500/20 pl-6 sm:pl-10 py-1 text-slate-300 cursor-pointer select-text"
-          >
-            <div className="flex items-center justify-between gap-2 text-xs font-mono text-slate-500 pb-6 select-none">
-              <div className="flex items-center gap-2">
-                <Terminal size={14} className="text-emerald-400" />
-                <span>log://narrativa-profesional</span>
-              </div>
-              {isTyping && (
-                <span className="text-[11px] text-emerald-400/70 hover:text-emerald-300 transition-colors hidden sm:inline">
-                  [clic para completar de inmediato]
-                </span>
-              )}
+          <article className="border-l-2 border-emerald-500/20 pl-6 sm:pl-10 py-1 text-slate-300 select-text">
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 pb-6 select-none">
+              <Terminal size={14} className="text-emerald-400" />
+              <span>log://narrativa-profesional</span>
             </div>
 
             <div className="relative">
