@@ -136,20 +136,15 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
             </div>
 
             <div className="relative">
-              {/* Profile Photo Floated Right on sm+ screens */}
-              <div className="float-none sm:float-right sm:ml-8 sm:mb-6 mb-6 w-full sm:w-72 md:w-80 max-w-full">
-                <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[4/5] shadow-2xl">
+              {/* Profile Photo Floated Right on sm+ screens (sin borde ni comentarios debajo) */}
+              <div className="float-none sm:float-right sm:ml-8 sm:mb-6 mb-6 w-full sm:w-64 md:w-72 max-w-full">
+                <div className="relative group overflow-hidden rounded-xl">
                   <img
-                    src={avatarUrl || "https://images.unsplash.com/photo-1534972195531-a756b1129f63?auto=format&fit=crop&w=800&q=80"}
+                    src={avatarUrl || "/alberto01.png"}
                     alt={`Foto de ${name}`}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-auto object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/20 to-transparent" />
-                  <div className="absolute bottom-3 left-4 right-4 flex items-baseline justify-between font-mono">
-                    <span className="text-sm font-semibold text-white">{name}</span>
-                    <span className="text-xs text-emerald-400">Software & Cloud</span>
-                  </div>
                 </div>
               </div>
 
