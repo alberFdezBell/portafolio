@@ -29,10 +29,20 @@ export function Hero({
     // If user prefers reduced motion, show full text immediately
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setCharIndex(fullText.length);
+      if (typeof window !== "undefined") {
+        (window as any).__heroTypingComplete = true;
+        window.dispatchEvent(new CustomEvent("hero-typing-complete"));
+      }
       return;
     }
 
-    if (charIndex >= fullText.length) return;
+    if (charIndex >= fullText.length) {
+      if (typeof window !== "undefined") {
+        (window as any).__heroTypingComplete = true;
+        window.dispatchEvent(new CustomEvent("hero-typing-complete"));
+      }
+      return;
+    }
 
     // Ultra-fast & snappy typing delay per character
     const currentChar = fullText[charIndex];
