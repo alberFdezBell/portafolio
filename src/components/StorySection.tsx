@@ -140,7 +140,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
               <div className="float-none sm:float-right sm:ml-8 sm:mb-6 mb-6 w-full sm:w-64 md:w-72 max-w-full">
                 <div className="relative group overflow-hidden rounded-xl">
                   <img
-                    src={avatarUrl || "/alberto01.png"}
+                    src={avatarUrl || "/alberto01.webp"}
                     alt={`Foto de ${name}`}
                     className="w-full h-auto object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
