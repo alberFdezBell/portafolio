@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "./ScrollReveal";
 
 export interface EducationItem {
@@ -18,6 +19,15 @@ interface EducationSectionProps {
 }
 
 export function EducationSection({ education }: EducationSectionProps) {
+  const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
+
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   return (
     <section id="estudios" className="py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -43,46 +53,91 @@ export function EducationSection({ education }: EducationSectionProps) {
           staggerDelay={0.08}
           className="divide-y divide-white/10 border-t border-b border-white/10"
         >
-          {education.map((item) => (
-            <StaggerItem key={item.id} yOffset={16}>
-              <div className="py-8 sm:py-10 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start group">
-                
-                {/* Years / Timeline */}
-                <div className="md:col-span-3 font-mono">
-                  <span className="text-xs text-emerald-400 font-semibold tracking-wide">
-                    {item.start_year} — {item.end_year}
-                  </span>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {item.institution}
-                  </p>
-                </div>
+          {education.map((item) => {
+            const isExpanded = !!expandedIds[item.id];
 
-                {/* Degree and Discipline */}
-                <div className="md:col-span-5 space-y-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
-                    {item.degree}
-                  </h3>
-                  {item.field_of_study && (
-                    <p className="text-xs font-mono text-cyan-400/90">
-                      {item.field_of_study}
+            return (
+              <StaggerItem key={item.id} yOffset={16}>
+                <div className="py-8 sm:py-10 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                  
+                  {/* Left Column: Years / Timeline & Institution */}
+                  <div className="md:col-span-4 font-mono space-y-1">
+                    <span className="text-xs text-emerald-400 font-semibold tracking-wide">
+                      {item.start_year} — {item.end_year}
+                    </span>
+                    <p className="text-xs text-slate-500 font-sans mt-0.5">
+                      {item.institution}
                     </p>
-                  )}
-                </div>
+                  </div>
 
-                {/* Description */}
-                <div className="md:col-span-4">
-                  {item.description ? (
-                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                      {item.description}
-                    </p>
-                  ) : (
-                    <span className="text-xs font-mono text-slate-600">—</span>
-                  )}
-                </div>
+                  {/* Right Column: Degree Header (Interactive with chevron) & Expandable Description */}
+                  <div className="md:col-span-8 space-y-2">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => toggleExpand(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleExpand(item.id);
+                        }
+                      }}
+                      aria-expanded={isExpanded}
+                      aria-controls={`edu-desc-${item.id}`}
+                      aria-label={isExpanded ? `Ocultar descripción de ${item.degree}` : `Mostrar descripción de ${item.degree}`}
+                      className="group/degree inline-flex items-center gap-2 flex-wrap cursor-pointer focus:outline-none select-none"
+                    >
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight transition-colors duration-300 group-hover/degree:text-slate-400">
+                        {item.degree}
+                      </h3>
 
-              </div>
-            </StaggerItem>
-          ))}
+                      <span className="p-1 text-slate-400 hover:text-white transition-colors duration-200 inline-flex items-center justify-center">
+                        <ChevronRight
+                          size={18}
+                          className={`transition-transform duration-300 ease-in-out ${
+                            isExpanded
+                              ? "rotate-90 text-emerald-400"
+                              : "rotate-0 text-slate-400 group-hover/degree:text-slate-300"
+                          }`}
+                        />
+                      </span>
+                    </div>
+
+                    {item.field_of_study && (
+                      <p className="text-xs font-mono text-cyan-400/90">
+                        {item.field_of_study}
+                      </p>
+                    )}
+
+                    {/* Expandable Description with smooth CSS Grid transition */}
+                    <div
+                      id={`edu-desc-${item.id}`}
+                      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out cursor-default ${
+                        isExpanded
+                          ? "grid-rows-[1fr] opacity-100 mt-2"
+                          : "grid-rows-[0fr] opacity-0 pointer-events-none"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="pt-2 pb-1">
+                          {item.description ? (
+                            <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/30 pl-4 py-1.5 bg-emerald-500/[0.02] rounded-r-lg">
+                              {item.description}
+                            </p>
+                          ) : (
+                            <p className="text-xs font-mono text-slate-500 italic pl-4 py-1">
+                              Descripción detallada en preparación.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </StaggerItem>
+            );
+          })}
         </StaggerContainer>
 
       </div>

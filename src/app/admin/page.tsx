@@ -303,6 +303,38 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleMoveEducation = async (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= education.length) return;
+    const updated = [...education];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+
+    // Re-assign order_num sequentially (1, 2, 3...)
+    const reordered = updated.map((item, i) => ({
+      ...item,
+      order_num: i + 1,
+    }));
+    setEducation(reordered);
+
+    // Persist new order for all already saved items
+    try {
+      await Promise.all(
+        reordered
+          .filter((item) => !item.isNew && typeof item.id === "number")
+          .map((item) =>
+            fetch("/api/admin/education", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item),
+            })
+          )
+      );
+      notify("Orden de formación actualizado.");
+    } catch {
+      notify("Error al actualizar el orden", "error");
+    }
+  };
+
   // Projects Mutations
   const handleAddProject = () => {
     setProjects([
@@ -1061,7 +1093,43 @@ export default function AdminDashboardPage() {
                   key={edu.id}
                   className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-4 shadow-xl"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Card Header: Position, Title & Reorder buttons */}
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-white truncate max-w-xs sm:max-w-md">
+                        {edu.degree || "Nuevo Título"} — <span className="text-slate-400 font-normal">{edu.institution || "Institución"}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Mover:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveEducation(idx, idx - 1)}
+                        disabled={idx === 0}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        title="Subir posición (aparecerá antes)"
+                        aria-label="Subir posición"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveEducation(idx, idx + 1)}
+                        disabled={idx === education.length - 1}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        title="Bajar posición (aparecerá después)"
+                        aria-label="Bajar posición"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-400 mb-1">Institución</label>
                       <input
@@ -1101,46 +1169,64 @@ export default function AdminDashboardPage() {
                         className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Inicio</label>
-                        <input
-                          type="text"
-                          value={edu.start_year || ""}
-                          onChange={(e) => {
-                            const updated = [...education];
-                            updated[idx].start_year = e.target.value;
-                            setEducation(updated);
-                          }}
-                          className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Fin</label>
-                        <input
-                          type="text"
-                          value={edu.end_year || ""}
-                          onChange={(e) => {
-                            const updated = [...education];
-                            updated[idx].end_year = e.target.value;
-                            setEducation(updated);
-                          }}
-                          className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Orden numérico</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={edu.order_num ?? idx + 1}
+                        onChange={(e) => {
+                          const updated = [...education];
+                          updated[idx].order_num = parseInt(e.target.value) || 0;
+                          setEducation(updated);
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
+                      />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Descripción</label>
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Inicio</label>
+                      <input
+                        type="text"
+                        value={edu.start_year || ""}
+                        onChange={(e) => {
+                          const updated = [...education];
+                          updated[idx].start_year = e.target.value;
+                          setEducation(updated);
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Fin</label>
+                      <input
+                        type="text"
+                        value={edu.end_year || ""}
+                        onChange={(e) => {
+                          const updated = [...education];
+                          updated[idx].end_year = e.target.value;
+                          setEducation(updated);
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                    <div className="sm:col-span-2 md:col-span-4">
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                        Descripción detallada (se despliega con el botón &quot;&gt;&quot; en la web)
+                      </label>
                       <textarea
-                        rows={2}
+                        rows={3}
+                        placeholder="Detalla lo aprendido, proyectos realizados, competencias adquiridas o especialidad..."
                         value={edu.description || ""}
                         onChange={(e) => {
                           const updated = [...education];
                           updated[idx].description = e.target.value;
                           setEducation(updated);
                         }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white"
+                        className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white placeholder-slate-500 leading-relaxed"
                       />
+                      <p className="text-[10px] text-slate-500 mt-1 font-mono">
+                        Esta descripción se despliega interactivamente al pulsar el botón &quot;&gt;&quot; de cada estudio en el portafolio.
+                      </p>
                     </div>
                   </div>
 
