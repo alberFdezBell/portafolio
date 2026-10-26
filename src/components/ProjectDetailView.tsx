@@ -192,19 +192,23 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
         type="button"
         onClick={onClose}
         aria-label="Volver a la pantalla principal"
-        className="h-full w-14 sm:w-20 shrink-0 border-r border-white/10 bg-[#060a12] hover:bg-slate-900/90 text-slate-400 hover:text-emerald-400 flex flex-col items-center justify-between py-8 cursor-pointer transition-all group z-30 select-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+        className="h-full w-12 sm:w-16 shrink-0 border-r border-white/10 bg-[#060a12] hover:bg-slate-900/80 flex items-center justify-center cursor-pointer transition-colors group z-30 select-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500/40"
       >
-        <div className="p-2.5 rounded-full border border-white/10 bg-white/5 group-hover:border-emerald-500/40 group-hover:bg-emerald-500/10 transition-all group-hover:-translate-x-1">
-          <ChevronLeft size={20} className="transition-transform group-hover:-translate-x-0.5" />
+        <div className="flex items-center justify-center p-2">
+          <svg
+            width="24"
+            height="56"
+            viewBox="0 0 24 56"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-slate-400 group-hover:text-emerald-400 transition-all duration-300 ease-out origin-center transform scale-y-[0.45] group-hover:scale-y-[1.2] group-hover:-translate-x-0.5"
+          >
+            <polyline points="15 6 8 28 15 50" vectorEffect="non-scaling-stroke" />
+          </svg>
         </div>
-
-        <div className="flex-1 flex items-center justify-center my-6">
-          <span className="[writing-mode:vertical-lr] rotate-180 font-mono text-[11px] sm:text-xs tracking-[0.25em] uppercase text-slate-400 group-hover:text-emerald-400 font-semibold transition-colors flex items-center gap-2">
-            <span>Volver a la pantalla principal</span>
-          </span>
-        </div>
-
-        <div className="w-2 h-2 rounded-full bg-emerald-400/60 group-hover:bg-emerald-400 group-hover:scale-125 transition-all shadow-sm shadow-emerald-400/40" />
       </button>
 
       {/* Contenido principal del proyecto */}
