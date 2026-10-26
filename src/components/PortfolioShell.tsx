@@ -33,6 +33,7 @@ export function PortfolioShell({
     setSelectedProject(proj);
 
     if (typeof document !== "undefined") {
+      document.body.classList.add("scrollbar-hidden");
       document.body.style.overflow = "hidden";
     }
 
@@ -47,14 +48,30 @@ export function PortfolioShell({
   const handleCloseProject = () => {
     setIsDetailOpen(false);
 
-    // Wait for the 750ms slide transition before cleaning up
+    // Restore body overflow at the START of the animation so the page layout is established immediately
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "";
+      // Keep scrollbar-hidden active during the slide animation so the scrollbar starts invisible
+    }
+
+    // When the 750ms slide transition finishes, smoothly reveal the scrollbar thumb
     setTimeout(() => {
       setSelectedProject(null);
       if (typeof document !== "undefined") {
-        document.body.style.overflow = "";
+        document.body.classList.remove("scrollbar-hidden");
       }
     }, 750);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = "";
+        document.body.classList.remove("scrollbar-hidden");
+      }
+    };
+  }, []);
 
   // Keyboard accessibility: Escape key closes the detail view
   useEffect(() => {

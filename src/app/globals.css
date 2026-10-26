@@ -21,6 +21,7 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   font-family: var(--font-geist-sans), "Twemoji Country Flags", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
@@ -59,10 +60,20 @@ pre,
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 4px;
+  transition: background-color 0.4s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
+}
+
+/* Invisible state for smooth fade-in after transitions */
+body.scrollbar-hidden::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+body.scrollbar-hidden {
+  scrollbar-color: transparent transparent !important;
 }
 
 /* Terminal Cursor (Hard Step Blink) */
