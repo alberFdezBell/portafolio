@@ -58,10 +58,15 @@ export function EducationSection({ education }: EducationSectionProps) {
 
             return (
               <StaggerItem key={item.id} yOffset={16}>
-                <div className="p-6 sm:p-8 pb-10 sm:pb-12 rounded-2xl bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                <div className="relative p-6 sm:p-8 rounded-2xl grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                  {/* Diffused background on all 4 sides */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-white/[0.05] [box-shadow:inset_0_0_20px_6px_#090d16] pointer-events-none rounded-2xl"
+                  />
                   
                   {/* Left Column: Years / Timeline & Institution */}
-                  <div className="md:col-span-4 font-mono space-y-1">
+                  <div className="relative z-10 md:col-span-4 font-mono space-y-1">
                     <span className="text-xs text-emerald-400 font-semibold tracking-wide">
                       {item.start_year} — {item.end_year}
                     </span>
@@ -71,7 +76,7 @@ export function EducationSection({ education }: EducationSectionProps) {
                   </div>
 
                   {/* Right Column: Degree Header (Interactive with chevron) & Expandable Description */}
-                  <div className="md:col-span-8 space-y-2">
+                  <div className="relative z-10 md:col-span-8 space-y-2">
                     <div
                       role="button"
                       tabIndex={0}

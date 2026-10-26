@@ -63,10 +63,15 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
             return (
               <StaggerItem key={exp.id} yOffset={20}>
-                <article className="p-6 sm:p-8 pb-10 sm:pb-12 rounded-2xl bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+                <article className="relative p-6 sm:p-8 rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+                  {/* Diffused background on all 4 sides */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-white/[0.05] [box-shadow:inset_0_0_20px_6px_#090d16] pointer-events-none rounded-2xl"
+                  />
                   
                   {/* Left Column: Metadata (Period, Company, Location) */}
-                  <div className="lg:col-span-4 space-y-2 font-mono">
+                  <div className="relative z-10 lg:col-span-4 space-y-2 font-mono">
                     <span className="inline-block text-xs text-emerald-400 font-semibold tracking-wide">
                       {exp.start_date} — {exp.is_current ? "Presente" : exp.end_date}
                     </span>
@@ -81,7 +86,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                   </div>
 
                   {/* Right Column: Role, Expandable Narrative & Technologies */}
-                  <div className="lg:col-span-8 space-y-3">
+                  <div className="relative z-10 lg:col-span-8 space-y-3">
                     <div
                       role="button"
                       tabIndex={0}
