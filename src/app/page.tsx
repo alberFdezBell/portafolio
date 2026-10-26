@@ -1,13 +1,10 @@
 import React from "react";
 import { getDb } from "@/lib/db";
-import { Navbar } from "@/components/Navbar";
-import { Hero } from "@/components/Hero";
-import { StorySection } from "@/components/StorySection";
-import { ExperienceSection, ExperienceItem } from "@/components/ExperienceSection";
-import { ProjectsSection, ProjectItem } from "@/components/ProjectsSection";
-import { EducationSection, EducationItem } from "@/components/EducationSection";
-import { ContactSection, SocialLinkItem } from "@/components/ContactSection";
-import { Footer } from "@/components/Footer";
+import { ExperienceItem } from "@/components/ExperienceSection";
+import { ProjectItem } from "@/components/ProjectsSection";
+import { EducationItem } from "@/components/EducationSection";
+import { SocialLinkItem } from "@/components/ContactSection";
+import { PortfolioShell } from "@/components/PortfolioShell";
 import { generatePersonSchema, generateWebSiteSchema } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -60,41 +57,13 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      <div className="min-h-screen bg-[#090d16] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
-        <Navbar statusBadge={profile.status_badge} />
-
-        <main id="main-content">
-          <Hero
-            name={profile.name}
-            title={profile.title}
-            shortBio={profile.short_bio}
-            avatarUrl={profile.avatar_url}
-            githubUrl={profile.github_url}
-            linkedinUrl={profile.linkedin_url}
-            email={profile.email}
-          />
-
-          <StorySection
-            aboutStory={profile.about_story}
-            avatarUrl={profile.avatar_url}
-            name={profile.name}
-          />
-
-          <ExperienceSection experiences={experiences} />
-
-          <ProjectsSection projects={projects} />
-
-          <EducationSection education={education} />
-
-          <ContactSection
-            email={profile.email}
-            location={profile.location}
-            socialLinks={socialLinks}
-          />
-        </main>
-
-        <Footer />
-      </div>
+      <PortfolioShell
+        profile={profile}
+        experiences={experiences}
+        projects={projects}
+        education={education}
+        socialLinks={socialLinks}
+      />
     </>
   );
 }
