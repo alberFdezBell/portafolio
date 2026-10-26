@@ -19,17 +19,23 @@ export async function POST(req: NextRequest) {
   const db = getDb();
 
   const techJson = Array.isArray(data.tech_stack) ? JSON.stringify(data.tech_stack) : data.tech_stack || "[]";
+  const mediaJson = Array.isArray(data.media) ? JSON.stringify(data.media) : data.media || "[]";
+  const linksJson = Array.isArray(data.links) ? JSON.stringify(data.links) : data.links || "[]";
 
   const result = db.prepare(`
-    INSERT INTO projects (title, description, tech_stack, image_url, demo_url, repo_url, featured, order_num)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO projects (title, description, long_description, tech_stack, image_url, demo_url, repo_url, status, media, links, featured, order_num)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     data.title,
     data.description || "",
+    data.long_description || "",
     techJson,
     data.image_url || "",
     data.demo_url || "",
     data.repo_url || "",
+    data.status || "Producción",
+    mediaJson,
+    linksJson,
     data.featured ? 1 : 0,
     data.order_num || 0
   );
@@ -45,25 +51,35 @@ export async function PUT(req: NextRequest) {
   const db = getDb();
 
   const techJson = Array.isArray(data.tech_stack) ? JSON.stringify(data.tech_stack) : data.tech_stack || "[]";
+  const mediaJson = Array.isArray(data.media) ? JSON.stringify(data.media) : data.media || "[]";
+  const linksJson = Array.isArray(data.links) ? JSON.stringify(data.links) : data.links || "[]";
 
   db.prepare(`
     UPDATE projects SET
       title = ?,
       description = ?,
+      long_description = ?,
       tech_stack = ?,
       image_url = ?,
       demo_url = ?,
       repo_url = ?,
+      status = ?,
+      media = ?,
+      links = ?,
       featured = ?,
       order_num = ?
     WHERE id = ?
   `).run(
     data.title,
     data.description || "",
+    data.long_description || "",
     techJson,
     data.image_url || "",
     data.demo_url || "",
     data.repo_url || "",
+    data.status || "Producción",
+    mediaJson,
+    linksJson,
     data.featured ? 1 : 0,
     data.order_num || 0,
     data.id

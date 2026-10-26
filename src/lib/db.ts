@@ -74,10 +74,14 @@ function initSchema(database: Database.Database) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       description TEXT,
+      long_description TEXT,
       tech_stack TEXT,
       image_url TEXT,
       demo_url TEXT,
       repo_url TEXT,
+      status TEXT DEFAULT 'Producción',
+      media TEXT DEFAULT '[]',
+      links TEXT DEFAULT '[]',
       featured INTEGER DEFAULT 0,
       order_num INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -109,6 +113,26 @@ function initSchema(database: Database.Database) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Migrate projects table if new columns are missing
+  try {
+    const projectCols = database.prepare("PRAGMA table_info(projects)").all() as Array<{ name: string }>;
+    const colNames = projectCols.map((c) => c.name);
+    if (!colNames.includes("long_description")) {
+      database.prepare("ALTER TABLE projects ADD COLUMN long_description TEXT").run();
+    }
+    if (!colNames.includes("status")) {
+      database.prepare("ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'Producción'").run();
+    }
+    if (!colNames.includes("media")) {
+      database.prepare("ALTER TABLE projects ADD COLUMN media TEXT DEFAULT '[]'").run();
+    }
+    if (!colNames.includes("links")) {
+      database.prepare("ALTER TABLE projects ADD COLUMN links TEXT DEFAULT '[]'").run();
+    }
+  } catch (e) {
+    console.error("Error migrating projects table:", e);
+  }
 
   // Seed default initial profile if none exists
   const profileCount = database.prepare("SELECT COUNT(*) as count FROM profile").get() as { count: number };

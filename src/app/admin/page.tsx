@@ -21,6 +21,10 @@ import {
   Sparkles,
   ArrowUp,
   ArrowDown,
+  Star,
+  X,
+  Video,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { IconPickerModal } from "@/components/IconPickerModal";
@@ -50,6 +54,8 @@ export default function AdminDashboardPage() {
   // Icon modal state
   const [iconModalOpen, setIconModalOpen] = useState(false);
   const [currentSocialIndex, setCurrentSocialIndex] = useState<number | null>(null);
+  const [projectLinkTarget, setProjectLinkTarget] = useState<{ projectIdx: number; linkIdx: number } | null>(null);
+  const [newTechInputs, setNewTechInputs] = useState<Record<string | number, string>>({});
 
   // Notification helper
   const notify = (text: string, type: "success" | "error" = "success") => {
@@ -341,9 +347,16 @@ export default function AdminDashboardPage() {
       {
         id: "temp-" + Date.now(),
         title: "Nuevo Proyecto",
-        description: "Descripción de la arquitectura o app...",
-        tech_stack: '["React", "Docker"]',
+        description: "Breve descripción técnica del proyecto",
+        long_description: "",
+        status: "Producción",
+        tech_stack: '["Next.js", "Docker"]',
         image_url: "",
+        media: "[]",
+        links: JSON.stringify([
+          { title: "Código fuente", url: "", icon: "github" },
+          { title: "Ejecutar Demo", url: "", icon: "external-link" },
+        ]),
         demo_url: "#",
         repo_url: "",
         featured: 0,
@@ -352,6 +365,38 @@ export default function AdminDashboardPage() {
       },
       ...projects,
     ]);
+  };
+
+  const handleMoveProject = async (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= projects.length) return;
+
+    const reordered = [...projects];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const updated = reordered.map((item, i) => ({
+      ...item,
+      order_num: i + 1,
+    }));
+    setProjects(updated);
+
+    try {
+      await Promise.all(
+        updated
+          .filter((item) => !item.isNew && typeof item.id === "number")
+          .map((item) =>
+            fetch("/api/admin/projects", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item),
+            })
+          )
+      );
+      notify("Orden de proyectos actualizado.");
+    } catch {
+      notify("Error al actualizar el orden de proyectos", "error");
+    }
   };
 
   const handleSaveProject = async (item: any) => {
@@ -896,174 +941,653 @@ export default function AdminDashboardPage() {
               <div>
                 <h2 className="text-lg font-bold text-white">Proyectos</h2>
                 <p className="text-xs text-slate-400 font-mono">
-                  Muestra tus repositorios de GitHub, demos en vivo e imágenes
+                  Administra sistemas desplegados, carrusel multimedia, estado y enlaces
                 </p>
               </div>
               <button
                 onClick={handleAddProject}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md active:scale-95"
               >
                 <Plus size={15} />
                 <span>Añadir Proyecto</span>
               </button>
             </div>
 
-            <div className="space-y-6">
-              {projects.map((proj, idx) => (
-                <div
-                  key={proj.id}
-                  className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-4 shadow-xl"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Título del Proyecto</label>
-                      <input
-                        type="text"
-                        value={proj.title}
-                        onChange={(e) => {
-                          const updated = [...projects];
-                          updated[idx].title = e.target.value;
-                          setProjects(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
+            <div className="space-y-8">
+              {projects.map((proj, idx) => {
+                // Parse media list
+                let mediaList: Array<{ id?: string; type: "image" | "video"; url: string; is_primary?: boolean; caption?: string }> = [];
+                try {
+                  mediaList = JSON.parse(proj.media || "[]");
+                  if (!Array.isArray(mediaList)) mediaList = [];
+                } catch {
+                  mediaList = [];
+                }
+                if (mediaList.length === 0 && proj.image_url) {
+                  mediaList = [{ type: "image", url: proj.image_url, is_primary: true }];
+                }
 
-                    <div className="flex items-center pt-5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-slate-300">
-                        <input
-                          type="checkbox"
-                          checked={proj.featured === 1}
-                          onChange={(e) => {
-                            const updated = [...projects];
-                            updated[idx].featured = e.target.checked ? 1 : 0;
-                            setProjects(updated);
-                          }}
-                          className="rounded border-white/10 bg-slate-900 text-emerald-500"
-                        />
-                        <Sparkles size={14} className="text-emerald-400" />
-                        <span>Proyecto Destacado</span>
-                      </label>
-                    </div>
+                // Parse links list
+                let linksList: Array<{ title: string; url: string; icon?: string }> = [];
+                try {
+                  linksList = JSON.parse(proj.links || "[]");
+                  if (!Array.isArray(linksList)) linksList = [];
+                } catch {
+                  linksList = [];
+                }
+                if (linksList.length === 0 && (proj.repo_url || proj.demo_url)) {
+                  if (proj.repo_url) linksList.push({ title: "Código fuente", url: proj.repo_url, icon: "github" });
+                  if (proj.demo_url && proj.demo_url !== "#") linksList.push({ title: "Ejecutar Demo", url: proj.demo_url, icon: "external-link" });
+                }
 
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Descripción</label>
-                      <textarea
-                        rows={2}
-                        value={proj.description || ""}
-                        onChange={(e) => {
-                          const updated = [...projects];
-                          updated[idx].description = e.target.value;
-                          setProjects(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white"
-                      />
-                    </div>
+                // Parse tech stack
+                let techList: string[] = [];
+                try {
+                  techList = JSON.parse(proj.tech_stack || "[]");
+                  if (!Array.isArray(techList)) techList = [];
+                } catch {
+                  techList = proj.tech_stack ? proj.tech_stack.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+                }
 
-                    {/* Image URL & Upload */}
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                        Imagen del Proyecto (URL o Subir Captura)
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={proj.image_url || ""}
-                          onChange={(e) => {
-                            const updated = [...projects];
-                            updated[idx].image_url = e.target.value;
-                            setProjects(updated);
-                          }}
-                          placeholder="https://... o /uploads/..."
-                          className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                        />
-                        <label className="cursor-pointer flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300">
-                          <Upload size={13} />
-                          <span>Subir</span>
+                const techInputValue = newTechInputs[proj.id] || "";
+
+                const handleAddTech = (techToAdd?: string) => {
+                  const val = (techToAdd || techInputValue).trim();
+                  if (!val || techList.includes(val)) return;
+                  const updated = [...techList, val];
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].tech_stack = JSON.stringify(updated);
+                  setProjects(updatedProjects);
+                  setNewTechInputs((prev) => ({ ...prev, [proj.id]: "" }));
+                };
+
+                const handleRemoveTech = (tIdx: number) => {
+                  const updated = techList.filter((_, i) => i !== tIdx);
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].tech_stack = JSON.stringify(updated);
+                  setProjects(updatedProjects);
+                };
+
+                const handleAddMedia = (type: "image" | "video" = "image") => {
+                  const newMedia = [
+                    ...mediaList,
+                    {
+                      id: String(Date.now()),
+                      type,
+                      url: "",
+                      is_primary: mediaList.length === 0,
+                    },
+                  ];
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].media = JSON.stringify(newMedia);
+                  setProjects(updatedProjects);
+                };
+
+                const handleUpdateMedia = (mIdx: number, field: string, value: any) => {
+                  const updatedMedia = [...mediaList];
+                  updatedMedia[mIdx] = { ...updatedMedia[mIdx], [field]: value };
+                  if (field === "is_primary" && value === true) {
+                    updatedMedia.forEach((m, i) => {
+                      m.is_primary = i === mIdx;
+                    });
+                    if (updatedMedia[mIdx].url) {
+                      projects[idx].image_url = updatedMedia[mIdx].url;
+                    }
+                  }
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].media = JSON.stringify(updatedMedia);
+                  setProjects(updatedProjects);
+                };
+
+                const handleRemoveMedia = (mIdx: number) => {
+                  const updatedMedia = mediaList.filter((_, i) => i !== mIdx);
+                  if (updatedMedia.length > 0 && !updatedMedia.some((m) => m.is_primary)) {
+                    updatedMedia[0].is_primary = true;
+                  }
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].media = JSON.stringify(updatedMedia);
+                  const primary = updatedMedia.find((m) => m.is_primary);
+                  updatedProjects[idx].image_url = primary?.url || updatedMedia[0]?.url || "";
+                  setProjects(updatedProjects);
+                };
+
+                const handleAddLink = () => {
+                  const newLinks = [
+                    ...linksList,
+                    { title: "Enlace", url: "https://", icon: "external-link" },
+                  ];
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].links = JSON.stringify(newLinks);
+                  setProjects(updatedProjects);
+                };
+
+                const handleUpdateLink = (lIdx: number, field: string, value: string) => {
+                  const updatedLinks = [...linksList];
+                  updatedLinks[lIdx] = { ...updatedLinks[lIdx], [field]: value };
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].links = JSON.stringify(updatedLinks);
+                  // Sync repo_url & demo_url if applicable
+                  if (field === "url") {
+                    if (updatedLinks[lIdx].icon === "github" || updatedLinks[lIdx].title.toLowerCase().includes("código") || updatedLinks[lIdx].title.toLowerCase().includes("repo")) {
+                      updatedProjects[idx].repo_url = value;
+                    }
+                    if (updatedLinks[lIdx].title.toLowerCase().includes("demo") || updatedLinks[lIdx].icon === "external-link") {
+                      updatedProjects[idx].demo_url = value;
+                    }
+                  }
+                  setProjects(updatedProjects);
+                };
+
+                const handleRemoveLink = (lIdx: number) => {
+                  const updatedLinks = linksList.filter((_, i) => i !== lIdx);
+                  const updatedProjects = [...projects];
+                  updatedProjects[idx].links = JSON.stringify(updatedLinks);
+                  setProjects(updatedProjects);
+                };
+
+                return (
+                  <div
+                    key={proj.id}
+                    className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-6 shadow-xl relative"
+                  >
+                    {/* Header Row: Title, Ordering, Status, Featured */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                      <div className="flex items-center gap-3 flex-1">
+                        {/* Order Controls */}
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveProject(idx, "up")}
+                            disabled={idx === 0}
+                            className="p-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-20 text-slate-300 disabled:cursor-not-allowed transition-all"
+                            title="Subir de posición"
+                          >
+                            <ArrowUp size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveProject(idx, "down")}
+                            disabled={idx === projects.length - 1}
+                            className="p-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-20 text-slate-300 disabled:cursor-not-allowed transition-all"
+                            title="Bajar de posición"
+                          >
+                            <ArrowDown size={12} />
+                          </button>
+                        </div>
+
+                        <div className="flex-1">
+                          <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                            Título del Proyecto
+                          </label>
                           <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
+                            type="text"
+                            value={proj.title}
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleFileUpload(file, (url) => {
-                                  const updated = [...projects];
-                                  updated[idx].image_url = url;
-                                  setProjects(updated);
-                                });
-                              }
+                              const updated = [...projects];
+                              updated[idx].title = e.target.value;
+                              setProjects(updated);
                             }}
+                            className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-emerald-500/50"
                           />
-                        </label>
+                        </div>
+                      </div>
+
+                      {/* Status & Featured Controls */}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div>
+                          <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                            Estado del Proyecto
+                          </label>
+                          <div className="flex items-center gap-1.5 p-1 rounded-lg border border-white/10 bg-slate-900">
+                            {(["En desarrollo", "Producción", "Finalizado"] as const).map((st) => (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  updated[idx].status = st;
+                                  setProjects(updated);
+                                }}
+                                className={`px-2.5 py-1 rounded text-xs font-mono transition-all flex items-center gap-1.5 ${
+                                  (proj.status || "Producción") === st
+                                    ? st === "En desarrollo"
+                                      ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold"
+                                      : st === "Producción"
+                                      ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold"
+                                      : "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-bold"
+                                    : "text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    st === "En desarrollo"
+                                      ? "bg-amber-400"
+                                      : st === "Producción"
+                                      ? "bg-emerald-400"
+                                      : "bg-cyan-400"
+                                  }`}
+                                />
+                                <span>{st}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-5">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-slate-300 bg-white/5 px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 transition-all">
+                            <input
+                              type="checkbox"
+                              checked={proj.featured === 1}
+                              onChange={(e) => {
+                                const updated = [...projects];
+                                updated[idx].featured = e.target.checked ? 1 : 0;
+                                setProjects(updated);
+                              }}
+                              className="rounded border-white/10 bg-slate-900 text-emerald-500"
+                            />
+                            <Sparkles size={14} className="text-emerald-400" />
+                            <span>Destacado</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">URL Repositorio GitHub</label>
-                      <input
-                        type="text"
-                        value={proj.repo_url || ""}
-                        onChange={(e) => {
-                          const updated = [...projects];
-                          updated[idx].repo_url = e.target.value;
-                          setProjects(updated);
-                        }}
-                        placeholder="https://github.com/alberFdezBell/..."
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                      />
+                    {/* Descriptions Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                          Descripción Corta (Aparece en la tarjeta inicial)
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={proj.description || ""}
+                          onChange={(e) => {
+                            const updated = [...projects];
+                            updated[idx].description = e.target.value;
+                            setProjects(updated);
+                          }}
+                          placeholder="Resumen conciso del proyecto..."
+                          className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                          Descripción Larga (Aparece al abrir el proyecto)
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={proj.long_description || ""}
+                          onChange={(e) => {
+                            const updated = [...projects];
+                            updated[idx].long_description = e.target.value;
+                            setProjects(updated);
+                          }}
+                          placeholder="Detalles de arquitectura, retos técnicos superados, microservicios, despliegue..."
+                          className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">URL Demo en Vivo</label>
-                      <input
-                        type="text"
-                        value={proj.demo_url || ""}
-                        onChange={(e) => {
-                          const updated = [...projects];
-                          updated[idx].demo_url = e.target.value;
-                          setProjects(updated);
-                        }}
-                        placeholder="https://..."
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                      />
+                    {/* INTUITIVE TECH STACK MANAGER */}
+                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-mono font-semibold text-emerald-400">
+                          Stack & Tecnologías
+                        </label>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          {techList.length} tecnologías configuradas
+                        </span>
+                      </div>
+
+                      {/* Current Tech Chips */}
+                      <div className="flex flex-wrap gap-2 min-h-8 p-2 rounded-lg border border-white/5 bg-slate-950/60">
+                        {techList.length === 0 ? (
+                          <span className="text-xs font-mono text-slate-500 italic py-0.5">
+                            Sin tecnologías añadidas aún. Usa el buscador o las sugerencias inferiores.
+                          </span>
+                        ) : (
+                          techList.map((tech, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 border border-white/10 text-xs font-mono text-slate-200 shadow-sm"
+                            >
+                              <span className="text-emerald-400 font-bold">#</span>
+                              <span>{tech}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTech(tIdx)}
+                                className="text-slate-400 hover:text-rose-400 ml-0.5 transition-colors"
+                                title="Eliminar tecnología"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Add Tech Input */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={techInputValue}
+                          onChange={(e) =>
+                            setNewTechInputs((prev) => ({ ...prev, [proj.id]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddTech();
+                            }
+                          }}
+                          placeholder="Escribe una tecnología (ej: Docker, Tailwind CSS, PostgreSQL) y pulsa Enter..."
+                          className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddTech()}
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-mono transition-all active:scale-95"
+                        >
+                          <Plus size={13} />
+                          <span>Añadir</span>
+                        </button>
+                      </div>
+
+                      {/* Quick Suggestions */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[11px] font-mono text-slate-500 mr-1">Sugerencias rápidas:</span>
+                        {[
+                          "Next.js",
+                          "TypeScript",
+                          "React",
+                          "Docker",
+                          "Node.js",
+                          "Tailwind CSS",
+                          "PostgreSQL",
+                          "SQLite",
+                          "Python",
+                          "Go",
+                          "Redis",
+                          "Portainer",
+                          "GraphQL",
+                        ].map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => handleAddTech(sug)}
+                            disabled={techList.includes(sug)}
+                            className="px-2 py-0.5 rounded text-[11px] font-mono border border-white/5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
+                          >
+                            +{sug}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                        Stack Tecnológico (JSON array ej: [&quot;Next.js&quot;, &quot;Docker&quot;, &quot;SQLite&quot;])
-                      </label>
-                      <input
-                        type="text"
-                        value={proj.tech_stack || ""}
-                        onChange={(e) => {
-                          const updated = [...projects];
-                          updated[idx].tech_stack = e.target.value;
-                          setProjects(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                      />
+                    {/* MULTIMEDIA / CAROUSEL MANAGER */}
+                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="block text-xs font-mono font-semibold text-emerald-400">
+                            Galería Multimedia & Carrusel
+                          </label>
+                          <p className="text-[11px] text-slate-400 font-mono">
+                            Añade imágenes o videos para el carrusel y define cuál será la imagen principal de la tarjeta
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAddMedia("image")}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
+                          >
+                            <ImageIcon size={13} className="text-emerald-400" />
+                            <span>+ Añadir Foto</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddMedia("video")}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
+                          >
+                            <Video size={13} className="text-cyan-400" />
+                            <span>+ Añadir Video</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {mediaList.length === 0 ? (
+                        <div className="p-6 rounded-lg border border-dashed border-white/10 bg-slate-950/40 text-center">
+                          <p className="text-xs font-mono text-slate-400">
+                            No hay elementos multimedia. Pulsa en &quot;+ Añadir Foto&quot; o &quot;+ Añadir Video&quot;.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {mediaList.map((mItem, mIdx) => (
+                            <div
+                              key={mIdx}
+                              className={`p-3 rounded-lg border transition-all flex flex-col md:flex-row md:items-center gap-3 ${
+                                mItem.is_primary
+                                  ? "border-emerald-500/40 bg-emerald-950/20"
+                                  : "border-white/10 bg-slate-950/60"
+                              }`}
+                            >
+                              {/* Preview thumbnail */}
+                              <div className="w-24 aspect-[16/9] rounded-md overflow-hidden bg-slate-900 border border-white/10 shrink-0 flex items-center justify-center">
+                                {mItem.url ? (
+                                  mItem.type === "video" ? (
+                                    <video src={mItem.url} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <img src={mItem.url} alt="Vista previa" className="w-full h-full object-cover" />
+                                  )
+                                ) : (
+                                  <span className="text-[10px] font-mono text-slate-500">Sin URL</span>
+                                )}
+                              </div>
+
+                              {/* Type toggle */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMedia(mIdx, "type", "image")}
+                                  className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 ${
+                                    mItem.type === "image"
+                                      ? "bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30"
+                                      : "text-slate-400 hover:text-white"
+                                  }`}
+                                >
+                                  <ImageIcon size={11} />
+                                  <span>Foto</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMedia(mIdx, "type", "video")}
+                                  className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 ${
+                                    mItem.type === "video"
+                                      ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30"
+                                      : "text-slate-400 hover:text-white"
+                                  }`}
+                                >
+                                  <Video size={11} />
+                                  <span>Video</span>
+                                </button>
+                              </div>
+
+                              {/* URL & Upload */}
+                              <div className="flex-1 flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={mItem.url || ""}
+                                  onChange={(e) => handleUpdateMedia(mIdx, "url", e.target.value)}
+                                  placeholder="URL (https://... o /uploads/...)"
+                                  className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
+                                />
+
+                                <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-all shrink-0">
+                                  <Upload size={12} />
+                                  <span>Subir</span>
+                                  <input
+                                    type="file"
+                                    accept={mItem.type === "video" ? "video/*" : "image/*"}
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        handleFileUpload(file, (url) => {
+                                          handleUpdateMedia(mIdx, "url", url);
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Primary Toggle & Delete */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMedia(mIdx, "is_primary", true)}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                                    mItem.is_primary
+                                      ? "bg-emerald-500 text-black font-semibold shadow-sm"
+                                      : "border border-white/10 bg-white/5 text-slate-400 hover:text-emerald-300 hover:border-emerald-500/30"
+                                  }`}
+                                  title="Marcar como imagen principal para la tarjeta inicial"
+                                >
+                                  <Star size={12} fill={mItem.is_primary ? "currentColor" : "none"} />
+                                  <span>{mItem.is_primary ? "Principal" : "Hacer Principal"}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMedia(mIdx)}
+                                  className="p-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                  title="Eliminar elemento"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LINKS MANAGER */}
+                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="block text-xs font-mono font-semibold text-emerald-400">
+                            Enlaces del Proyecto (con icono y nombre)
+                          </label>
+                          <p className="text-[11px] text-slate-400 font-mono">
+                            Repositorio GitHub, demo en vivo, documentación, etc.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddLink}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
+                        >
+                          <Plus size={13} />
+                          <span>+ Añadir Enlace</span>
+                        </button>
+                      </div>
+
+                      {linksList.length === 0 ? (
+                        <div className="p-4 rounded-lg border border-dashed border-white/10 bg-slate-950/40 text-center">
+                          <p className="text-xs font-mono text-slate-400">
+                            No hay enlaces configurados. Pulsa en &quot;+ Añadir Enlace&quot;.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {linksList.map((link, lIdx) => (
+                            <div
+                              key={lIdx}
+                              className="p-3 rounded-lg border border-white/10 bg-slate-950/60 flex flex-col md:flex-row md:items-center gap-3"
+                            >
+                              {/* Icon Selector Button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCurrentSocialIndex(null);
+                                  setProjectLinkTarget({ projectIdx: idx, linkIdx: lIdx });
+                                  setIconModalOpen(true);
+                                }}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:border-emerald-500/40 hover:bg-white/10 text-xs font-mono text-white shrink-0 transition-all"
+                                title="Cambiar icono del enlace"
+                              >
+                                <DynamicIcon name={link.icon || "external-link"} size={16} />
+                                <span className="text-slate-400 text-[11px]">{link.icon || "icono"}</span>
+                              </button>
+
+                              {/* Link Title */}
+                              <div className="w-full md:w-48">
+                                <input
+                                  type="text"
+                                  value={link.title}
+                                  onChange={(e) => handleUpdateLink(lIdx, "title", e.target.value)}
+                                  placeholder="Ej: Código fuente, Demo..."
+                                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
+                                />
+                              </div>
+
+                              {/* Link URL */}
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={link.url}
+                                  onChange={(e) => handleUpdateLink(lIdx, "url", e.target.value)}
+                                  placeholder="https://..."
+                                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
+                                />
+                              </div>
+
+                              {/* Delete button */}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLink(lIdx)}
+                                className="p-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
+                                title="Eliminar enlace"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Actions Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                      <span className="text-xs font-mono text-slate-500">
+                        Orden #{proj.order_num || idx + 1}
+                      </span>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProject(proj.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveProject(proj)}
+                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md active:scale-95"
+                        >
+                          <Save size={13} />
+                          <span>Guardar Proyecto</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/5">
-                    <button
-                      onClick={() => handleDeleteProject(proj.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors"
-                    >
-                      <Trash2 size={13} />
-                      <span>Eliminar</span>
-                    </button>
-                    <button
-                      onClick={() => handleSaveProject(proj)}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-                    >
-                      <Save size={13} />
-                      <span>Guardar</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1460,14 +1984,48 @@ export default function AdminDashboardPage() {
       {/* CDN Icon Picker Modal */}
       <IconPickerModal
         isOpen={iconModalOpen}
-        onClose={() => setIconModalOpen(false)}
-        selectedIcon={currentSocialIndex !== null ? socials[currentSocialIndex]?.icon_name : ""}
+        onClose={() => {
+          setIconModalOpen(false);
+          setCurrentSocialIndex(null);
+          setProjectLinkTarget(null);
+        }}
+        selectedIcon={
+          currentSocialIndex !== null
+            ? socials[currentSocialIndex]?.icon_name
+            : projectLinkTarget !== null
+            ? (() => {
+                try {
+                  const links = JSON.parse(projects[projectLinkTarget.projectIdx]?.links || "[]");
+                  return links[projectLinkTarget.linkIdx]?.icon || "";
+                } catch {
+                  return "";
+                }
+              })()
+            : ""
+        }
         onSelect={(iconId) => {
           if (currentSocialIndex !== null) {
             const updated = [...socials];
             updated[currentSocialIndex].icon_name = iconId;
             setSocials(updated);
+          } else if (projectLinkTarget !== null) {
+            const { projectIdx, linkIdx } = projectLinkTarget;
+            const updatedProjects = [...projects];
+            let linksList: any[] = [];
+            try {
+              linksList = JSON.parse(updatedProjects[projectIdx]?.links || "[]");
+            } catch {
+              linksList = [];
+            }
+            if (linksList[linkIdx]) {
+              linksList[linkIdx].icon = iconId;
+              updatedProjects[projectIdx].links = JSON.stringify(linksList);
+              setProjects(updatedProjects);
+            }
           }
+          setIconModalOpen(false);
+          setCurrentSocialIndex(null);
+          setProjectLinkTarget(null);
         }}
       />
     </div>

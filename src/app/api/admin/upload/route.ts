@@ -4,8 +4,18 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+  "video/quicktime",
+];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(req: NextRequest) {
   const authed = await isAuthenticated();
@@ -21,14 +31,14 @@ export async function POST(req: NextRequest) {
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Formato no permitido. Solo se aceptan JPEG, PNG, WebP, GIF y SVG." },
+        { error: "Formato no permitido. Se aceptan imágenes (JPEG, PNG, WebP, GIF, SVG) y videos (MP4, WebM, OGG, MOV)." },
         { status: 400 }
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "El archivo excede el tamaño máximo permitido de 5MB." },
+        { error: "El archivo excede el tamaño máximo permitido de 50MB." },
         { status: 400 }
       );
     }

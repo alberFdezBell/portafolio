@@ -86,7 +86,6 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-semibold transition-all active:scale-95 shadow-sm shadow-emerald-500/20"
                   >
                     <Send size={13} />
-                    <span>Escribir</span>
                   </a>
                 </div>
               </div>
