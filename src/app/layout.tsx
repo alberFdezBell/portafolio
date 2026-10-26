@@ -89,6 +89,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="dark scroll-smooth">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/TwemojiCountryFlags.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans bg-[#090d16] text-slate-100 antialiased`}
       >
