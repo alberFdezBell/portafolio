@@ -47,10 +47,10 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
           </div>
         </ScrollReveal>
 
-        {/* Open Editorial Timeline / Dossier (No Heavy Cards) */}
+        {/* Open Editorial Timeline / Dossier */}
         <StaggerContainer
           staggerDelay={0.08}
-          className="space-y-12 sm:space-y-16"
+          className="space-y-6 sm:space-y-8"
         >
           {experiences.map((exp) => {
             const isExpanded = !!expandedIds[exp.id];
@@ -63,7 +63,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
             return (
               <StaggerItem key={exp.id} yOffset={20}>
-                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+                <article className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-white/20 transition-all duration-300 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
                   
                   {/* Left Column: Metadata (Period, Company, Location) */}
                   <div className="lg:col-span-4 space-y-2 font-mono">
@@ -128,7 +128,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                       <div className="overflow-hidden">
                         <div className="pt-2 pb-1">
                           {exp.description ? (
-                            <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/30 pl-4 py-1.5 bg-emerald-500/[0.02] rounded-r-lg">
+                            <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/40 pl-4 py-2 bg-black/30 rounded-r-lg">
                               {exp.description}
                             </p>
                           ) : (

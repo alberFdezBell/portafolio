@@ -48,24 +48,24 @@ export function EducationSection({ education }: EducationSectionProps) {
           </div>
         </ScrollReveal>
 
-        {/* Open Editorial List (Hairline Separators, No Boxes) */}
+        {/* Education List Cards */}
         <StaggerContainer
           staggerDelay={0.08}
-          className="divide-y divide-white/10 border-t border-b border-white/10"
+          className="space-y-5 sm:space-y-6"
         >
           {education.map((item) => {
             const isExpanded = !!expandedIds[item.id];
 
             return (
               <StaggerItem key={item.id} yOffset={16}>
-                <div className="py-8 sm:py-10 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-white/20 transition-all duration-300 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
                   
                   {/* Left Column: Years / Timeline & Institution */}
                   <div className="md:col-span-4 font-mono space-y-1">
                     <span className="text-xs text-emerald-400 font-semibold tracking-wide">
                       {item.start_year} — {item.end_year}
                     </span>
-                    <p className="text-xs text-slate-500 font-sans mt-0.5">
+                    <p className="text-xs text-slate-400 font-sans mt-0.5">
                       {item.institution}
                     </p>
                   </div>
@@ -121,7 +121,7 @@ export function EducationSection({ education }: EducationSectionProps) {
                       <div className="overflow-hidden">
                         <div className="pt-2 pb-1">
                           {item.description ? (
-                            <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/30 pl-4 py-1.5 bg-emerald-500/[0.02] rounded-r-lg">
+                            <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/40 pl-4 py-2 bg-black/30 rounded-r-lg">
                               {item.description}
                             </p>
                           ) : (
