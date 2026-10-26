@@ -63,7 +63,20 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
             return (
               <StaggerItem key={exp.id} yOffset={20}>
-                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 group">
+                <article
+                  onClick={() => toggleExpand(exp.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-controls={`exp-desc-${exp.id}`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleExpand(exp.id);
+                    }
+                  }}
+                  className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 group cursor-pointer focus:outline-none"
+                >
                   
                   {/* Left Column: Metadata (Period, Company, Location) */}
                   <div className="lg:col-span-4 space-y-2 font-mono">
@@ -84,15 +97,17 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                   <div className="lg:col-span-8 space-y-3">
                     <div className="inline-flex items-center gap-2 flex-wrap">
                       <h3
-                        onClick={() => toggleExpand(exp.id)}
-                        className="text-xl sm:text-2xl font-bold text-white tracking-tight transition-colors duration-300 group-hover:text-slate-400 cursor-pointer"
+                        className="text-xl sm:text-2xl font-bold text-white tracking-tight transition-colors duration-300 group-hover:text-slate-400"
                       >
                         {exp.role}
                       </h3>
 
                       <button
                         type="button"
-                        onClick={() => toggleExpand(exp.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(exp.id);
+                        }}
                         aria-expanded={isExpanded}
                         aria-controls={`exp-desc-${exp.id}`}
                         aria-label={isExpanded ? `Ocultar descripción de ${exp.role}` : `Mostrar descripción de ${exp.role}`}
@@ -110,7 +125,8 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                     {/* Expandable Description with smooth CSS Grid animation */}
                     <div
                       id={`exp-desc-${exp.id}`}
-                      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                      onClick={(e) => e.stopPropagation()}
+                      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out cursor-default ${
                         isExpanded
                           ? "grid-rows-[1fr] opacity-100"
                           : "grid-rows-[0fr] opacity-0 pointer-events-none"
