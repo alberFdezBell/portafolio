@@ -28,11 +28,9 @@ export function PortfolioShell({
 }: PortfolioShellProps) {
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isSliding, setIsSliding] = useState(false);
 
   const handleOpenProject = (proj: ProjectItem) => {
     setSelectedProject(proj);
-    setIsSliding(true);
 
     if (typeof document !== "undefined") {
       document.body.style.overflow = "hidden";
@@ -51,7 +49,6 @@ export function PortfolioShell({
 
     // Wait for the 750ms slide transition before cleaning up
     setTimeout(() => {
-      setIsSliding(false);
       setSelectedProject(null);
       if (typeof document !== "undefined") {
         document.body.style.overflow = "";
@@ -72,22 +69,20 @@ export function PortfolioShell({
 
   return (
     <div className="relative min-h-screen bg-[#090d16] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden">
+      {/* Fixed Navbar with camera tracking pan transition synchronized */}
+      <Navbar
+        statusBadge={profile.status_badge}
+        className={`transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
+          isDetailOpen ? "-translate-x-full pointer-events-none" : "translate-x-0"
+        }`}
+      />
+
       {/* SCREEN 1: Main Portfolio Screen (slides to the left as camera pans right) */}
       <div
-        className={`w-full min-h-screen ${
-          isSliding || isDetailOpen
-            ? "transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)]"
-            : ""
-        } ${
-          isDetailOpen
-            ? "-translate-x-full pointer-events-none"
-            : isSliding
-            ? "translate-x-0"
-            : ""
+        className={`w-full min-h-screen transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
+          isDetailOpen ? "-translate-x-full pointer-events-none" : "translate-x-0"
         }`}
       >
-        <Navbar statusBadge={profile.status_badge} />
-
         <main id="main-content">
           <Hero
             name={profile.name}
