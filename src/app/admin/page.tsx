@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { IconPickerModal } from "@/components/IconPickerModal";
 import { DynamicIcon } from "@/components/DynamicIcon";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function AdminDashboardPage() {
   const [currentSocialIndex, setCurrentSocialIndex] = useState<number | null>(null);
   const [projectLinkTarget, setProjectLinkTarget] = useState<{ projectIdx: number; linkIdx: number } | null>(null);
   const [newTechInputs, setNewTechInputs] = useState<Record<string | number, string>>({});
+  const [markdownPreviews, setMarkdownPreviews] = useState<Record<string | number, boolean>>({});
 
   // Notification helper
   const notify = (text: string, type: "success" | "error" = "success") => {
@@ -1212,20 +1214,178 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                          Descripción Larga (Aparece al abrir el proyecto)
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={proj.long_description || ""}
-                          onChange={(e) => {
-                            const updated = [...projects];
-                            updated[idx].long_description = e.target.value;
-                            setProjects(updated);
-                          }}
-                          placeholder="Detalles de arquitectura, retos técnicos superados, microservicios, despliegue..."
-                          className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50"
-                        />
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-[11px] font-mono text-slate-400">
+                            Descripción Detallada (Aparece al abrir el proyecto)
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-emerald-400/80 hidden sm:inline">
+                              Soporta Markdown
+                            </span>
+                            <div className="flex rounded-lg bg-slate-950 p-0.5 border border-white/10 text-[10px] font-mono">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMarkdownPreviews((prev) => ({
+                                    ...prev,
+                                    [proj.id || idx]: false,
+                                  }))
+                                }
+                                className={`px-2.5 py-1 rounded transition-colors ${
+                                  !markdownPreviews[proj.id || idx]
+                                    ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                    : "text-slate-400 hover:text-slate-200"
+                                }`}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMarkdownPreviews((prev) => ({
+                                    ...prev,
+                                    [proj.id || idx]: true,
+                                  }))
+                                }
+                                className={`px-2.5 py-1 rounded transition-colors ${
+                                  markdownPreviews[proj.id || idx]
+                                    ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                    : "text-slate-400 hover:text-slate-200"
+                                }`}
+                              >
+                                Vista Previa
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {!markdownPreviews[proj.id || idx] ? (
+                          <>
+                            {/* Toolbar de Markdown con atajos */}
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5 p-1.5 rounded-lg bg-slate-950/70 border border-white/5 text-[11px] font-mono text-slate-400">
+                              <span className="text-[10px] text-slate-500 px-1">Atajos:</span>
+                              <button
+                                type="button"
+                                title="Título H2"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur}\n\n## Nuevo Encabezado\n` : `## Nuevo Encabezado\n`;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                ## H2
+                              </button>
+                              <button
+                                type="button"
+                                title="Negrita"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur} **texto en negrita** ` : `**texto en negrita** `;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                title="Cursiva"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur} *texto en cursiva* ` : `*texto en cursiva* `;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors italic"
+                              >
+                                I
+                              </button>
+                              <button
+                                type="button"
+                                title="Lista"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur}\n- Elemento 1\n- Elemento 2\n` : `- Elemento 1\n- Elemento 2\n`;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                • Lista
+                              </button>
+                              <button
+                                type="button"
+                                title="Código en línea"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur} \`código\` ` : `\`código\` `;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                `código`
+                              </button>
+                              <button
+                                type="button"
+                                title="Bloque de código"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur}\n\`\`\`typescript\n// Tu código aquí\n\`\`\`\n` : `\`\`\`typescript\n// Tu código aquí\n\`\`\`\n`;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                ```bloque```
+                              </button>
+                              <button
+                                type="button"
+                                title="Enlace"
+                                onClick={() => {
+                                  const updated = [...projects];
+                                  const cur = updated[idx].long_description || "";
+                                  updated[idx].long_description = cur ? `${cur} [Texto del enlace](https://...) ` : `[Texto del enlace](https://...) `;
+                                  setProjects(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                Enlace
+                              </button>
+                            </div>
+
+                            <textarea
+                              rows={6}
+                              value={proj.long_description || ""}
+                              onChange={(e) => {
+                                const updated = [...projects];
+                                updated[idx].long_description = e.target.value;
+                                setProjects(updated);
+                              }}
+                              placeholder="Escribe la descripción en Markdown:
+## Arquitectura & Retos
+Explicación detallada del proyecto, decisiones técnicas y soluciones implementadas.
+
+### Características Principales
+- **Rendimiento**: Cargas subsegundo con SSR.
+- **Seguridad**: Autenticación 2FA TOTP."
+                              className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50 font-mono"
+                            />
+                          </>
+                        ) : (
+                          <div className="w-full min-h-[160px] max-h-[350px] overflow-y-auto rounded-lg border border-white/10 bg-slate-950 p-4 text-xs text-white">
+                            {proj.long_description ? (
+                              <MarkdownRenderer content={proj.long_description} />
+                            ) : (
+                              <p className="text-slate-500 italic font-mono text-xs">
+                                No hay contenido aún. Cambia a &quot;Editar&quot; para redactar en Markdown.
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 

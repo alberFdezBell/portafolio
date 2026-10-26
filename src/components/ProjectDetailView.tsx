@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { DynamicIcon } from "./DynamicIcon";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ProjectItem, MediaItem, LinkItem } from "./ProjectsSection";
 
 interface ProjectDetailViewProps {
@@ -296,18 +297,16 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
             </div>
           )}
 
-          {/* Descripción larga */}
+          {/* Descripción larga con soporte Markdown */}
           <div className="space-y-4 pt-4 border-t border-white/10">
             <h3 className="text-xs font-mono tracking-wider uppercase text-emerald-400 flex items-center gap-2">
               <span className="w-3 h-px bg-emerald-400" />
               <span>Descripción Detallada</span>
             </h3>
-            <div className="text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-4 font-normal">
-              {project.long_description ? (
-                <p>{project.long_description}</p>
-              ) : (
-                <p>{project.description}</p>
-              )}
+            <div className="pt-1">
+              <MarkdownRenderer
+                content={project.long_description || project.description || ""}
+              />
             </div>
           </div>
         </div>
