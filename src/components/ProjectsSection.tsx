@@ -31,14 +31,11 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
             <div>
               <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
                 <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
-                <span>03 / Proyectos & Arquitectura</span>
+                <span>03 / Proyectos</span>
               </div>
               <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
                 Sistemas en Producción
               </h2>
-              <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono mt-3">
-                Aplicaciones web full-stack, contenedores orquestados y utilidades técnicas.
-              </p>
             </div>
             <span className="font-mono text-xs text-slate-500 pb-1">
               [ {projects.length} sistemas documentados ]
