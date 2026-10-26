@@ -19,6 +19,8 @@ import {
   AlertCircle,
   ExternalLink,
   Sparkles,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import Link from "next/link";
 import { IconPickerModal } from "@/components/IconPickerModal";
@@ -214,6 +216,38 @@ export default function AdminDashboardPage() {
       fetchAllData();
     } catch {
       notify("Error al eliminar", "error");
+    }
+  };
+
+  const handleMoveExperience = async (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= experiences.length) return;
+    const updated = [...experiences];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+
+    // Re-assign order_num sequentially (1, 2, 3...)
+    const reordered = updated.map((item, i) => ({
+      ...item,
+      order_num: i + 1,
+    }));
+    setExperiences(reordered);
+
+    // Persist new order for all already saved items
+    try {
+      await Promise.all(
+        reordered
+          .filter((item) => !item.isNew && typeof item.id === "number")
+          .map((item) =>
+            fetch("/api/admin/experience", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item),
+            })
+          )
+      );
+      notify("Orden de trayectorias actualizado.");
+    } catch {
+      notify("Error al actualizar el orden", "error");
     }
   };
 
@@ -630,7 +664,43 @@ export default function AdminDashboardPage() {
                   key={exp.id}
                   className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-4 shadow-xl"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Card Header: Position, Title & Reorder buttons */}
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-white truncate max-w-xs sm:max-w-md">
+                        {exp.role || "Nuevo Puesto"} — <span className="text-slate-400 font-normal">{exp.company || "Empresa"}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Mover:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveExperience(idx, idx - 1)}
+                        disabled={idx === 0}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        title="Subir posición (aparecerá antes)"
+                        aria-label="Subir posición"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveExperience(idx, idx + 1)}
+                        disabled={idx === experiences.length - 1}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        title="Bajar posición (aparecerá después)"
+                        aria-label="Bajar posición"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-400 mb-1">Empresa</label>
                       <input
@@ -671,6 +741,22 @@ export default function AdminDashboardPage() {
                       />
                     </div>
                     <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                        Orden numérico
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={exp.order_num ?? idx + 1}
+                        onChange={(e) => {
+                          const updated = [...experiences];
+                          updated[idx].order_num = parseInt(e.target.value) || 0;
+                          setExperiences(updated);
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-[11px] font-mono text-slate-400 mb-1">Fecha Inicio</label>
                       <input
                         type="text"
@@ -696,7 +782,7 @@ export default function AdminDashboardPage() {
                         className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
                       />
                     </div>
-                    <div className="flex items-center pt-5">
+                    <div className="flex items-center pt-5 sm:col-span-2">
                       <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-slate-300">
                         <input
                           type="checkbox"
