@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ExternalLink,
   ChevronLeft,
@@ -172,6 +172,21 @@ function ProjectMediaCarousel({ media, title }: { media: MediaItem[]; title: str
 }
 
 export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) {
+  const [canClose, setCanClose] = useState(false);
+
+  useEffect(() => {
+    // Prevent accidental clicks on the back button during entry slide (e.g. from double-clicking the project card)
+    const timer = setTimeout(() => {
+      setCanClose(true);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSafeClose = () => {
+    if (!canClose) return;
+    onClose();
+  };
+
   const mediaList = getMediaList(project);
   const linksList = getLinksList(project);
 
@@ -190,7 +205,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
       {/* Botón vertical a la izquierda que ocupa todo el alto para volver hacia la izquierda */}
       <button
         type="button"
-        onClick={onClose}
+        onClick={handleSafeClose}
         aria-label="Volver a la pantalla principal"
         className="h-full w-12 sm:w-16 shrink-0 border-r border-white/10 bg-[#060a12] hover:bg-slate-900/80 flex items-center justify-center cursor-pointer transition-colors group z-30 select-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500/40"
       >

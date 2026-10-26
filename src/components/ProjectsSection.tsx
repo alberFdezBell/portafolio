@@ -124,7 +124,14 @@ export function ProjectsSection({ projects, onSelectProject }: ProjectsSectionPr
                 <article
                   role="button"
                   tabIndex={0}
-                  onClick={() => onSelectProject?.(proj)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSelectProject?.(proj);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();

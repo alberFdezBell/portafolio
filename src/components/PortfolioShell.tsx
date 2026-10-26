@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Navbar } from "./Navbar";
 import { Hero } from "./Hero";
 import { StorySection } from "./StorySection";
@@ -28,8 +28,20 @@ export function PortfolioShell({
 }: PortfolioShellProps) {
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isOpeningRef = useRef(false);
 
   const handleOpenProject = (proj: ProjectItem) => {
+    // If already open or opening, ignore rapid clicks
+    if (isDetailOpen || isOpeningRef.current) return;
+    isOpeningRef.current = true;
+
+    // Clear any pending close timer so selectedProject is never cleared
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
     setSelectedProject(proj);
 
     if (typeof document !== "undefined") {
@@ -41,11 +53,20 @@ export function PortfolioShell({
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsDetailOpen(true);
+        setTimeout(() => {
+          isOpeningRef.current = false;
+        }, 750);
       });
     });
   };
 
   const handleCloseProject = () => {
+    if (isOpeningRef.current) return;
+
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+
     setIsDetailOpen(false);
 
     // Restore body overflow at the START of the animation so the page layout is established immediately
@@ -55,17 +76,21 @@ export function PortfolioShell({
     }
 
     // When the 750ms slide transition finishes, smoothly reveal the scrollbar thumb
-    setTimeout(() => {
+    closeTimerRef.current = setTimeout(() => {
       setSelectedProject(null);
       if (typeof document !== "undefined") {
         document.body.classList.remove("scrollbar-hidden");
       }
+      closeTimerRef.current = null;
     }, 750);
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
       if (typeof document !== "undefined") {
         document.body.style.overflow = "";
         document.body.classList.remove("scrollbar-hidden");
