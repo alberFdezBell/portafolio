@@ -48,17 +48,17 @@ export function EducationSection({ education }: EducationSectionProps) {
           </div>
         </ScrollReveal>
 
-        {/* Education List Cards */}
+        {/* Education List */}
         <StaggerContainer
           staggerDelay={0.08}
-          className="space-y-5 sm:space-y-6"
+          className="space-y-6 sm:space-y-8"
         >
           {education.map((item) => {
             const isExpanded = !!expandedIds[item.id];
 
             return (
               <StaggerItem key={item.id} yOffset={16}>
-                <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-slate-900/40 hover:border-white/20 transition-all duration-300 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                <div className="p-6 sm:p-8 pb-10 sm:pb-12 rounded-2xl bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
                   
                   {/* Left Column: Years / Timeline & Institution */}
                   <div className="md:col-span-4 font-mono space-y-1">
