@@ -115,20 +115,17 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
                     href={social.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between py-3.5 group text-slate-300 hover:text-white transition-colors"
+                    className="flex items-center py-3.5 group text-slate-300 hover:text-white transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <DynamicIcon name={social.icon_name} size={16} />
                       <span className="text-sm font-medium group-hover:text-emerald-300 transition-colors">
                         {social.platform}
                       </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 font-mono text-xs text-slate-500 group-hover:text-emerald-400 transition-colors">
-                      <span className="hidden sm:inline">
-                        {social.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                      </span>
-                      <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      <ArrowUpRight
+                        size={14}
+                        className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
+                      />
                     </div>
                   </a>
                 </StaggerItem>

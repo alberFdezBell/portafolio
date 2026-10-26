@@ -34,7 +34,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                 <span>03 / Proyectos</span>
               </div>
               <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-                Sistemas en Producción
+                Sistemas desplegados
               </h2>
             </div>
             <span className="font-mono text-xs text-slate-500 pb-1">
