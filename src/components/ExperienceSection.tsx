@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-// Lucide icons removed in favor of clean editorial typography
+import React, { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "./ScrollReveal";
 
 export interface ExperienceItem {
@@ -21,6 +21,15 @@ interface ExperienceSectionProps {
 }
 
 export function ExperienceSection({ experiences }: ExperienceSectionProps) {
+  const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
+
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   return (
     <section id="experiencia" className="py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -44,6 +53,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
           className="space-y-12 sm:space-y-16"
         >
           {experiences.map((exp) => {
+            const isExpanded = !!expandedIds[exp.id];
             let parsedSkills: string[] = [];
             try {
               parsedSkills = JSON.parse(exp.skills || "[]");
@@ -53,7 +63,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
             return (
               <StaggerItem key={exp.id} yOffset={20}>
-                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 group">
+                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
                   
                   {/* Left Column: Metadata (Period, Company, Location) */}
                   <div className="lg:col-span-4 space-y-2 font-mono">
@@ -70,17 +80,57 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                     )}
                   </div>
 
-                  {/* Right Column: Role, Narrative & Technologies */}
-                  <div className="lg:col-span-8 space-y-4">
-                    <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
-                      {exp.role}
-                    </h3>
+                  {/* Right Column: Role, Expandable Narrative & Technologies */}
+                  <div className="lg:col-span-8 space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        {exp.role}
+                      </h3>
 
-                    {exp.description && (
-                      <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed whitespace-pre-line font-normal">
-                        {exp.description}
-                      </p>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(exp.id)}
+                        aria-expanded={isExpanded}
+                        aria-controls={`exp-desc-${exp.id}`}
+                        aria-label={isExpanded ? `Ocultar descripción de ${exp.role}` : `Mostrar descripción de ${exp.role}`}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg border transition-all duration-300 flex items-center justify-center shrink-0 cursor-pointer ${
+                          isExpanded
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm shadow-emerald-500/10"
+                            : "bg-slate-900/60 border-white/10 hover:border-emerald-500/40 text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80"
+                        }`}
+                      >
+                        <ChevronRight
+                          size={18}
+                          className={`transition-transform duration-300 ease-in-out ${
+                            isExpanded ? "rotate-90 text-emerald-400" : "rotate-0 text-slate-400"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Expandable Description with smooth CSS Grid animation */}
+                    <div
+                      id={`exp-desc-${exp.id}`}
+                      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                        isExpanded
+                          ? "grid-rows-[1fr] opacity-100"
+                          : "grid-rows-[0fr] opacity-0 pointer-events-none"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="pt-2 pb-1">
+                          {exp.description ? (
+                            <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed whitespace-pre-line font-normal border-l-2 border-emerald-500/30 pl-4 py-1.5 bg-emerald-500/[0.02] rounded-r-lg">
+                              {exp.description}
+                            </p>
+                          ) : (
+                            <p className="text-xs font-mono text-slate-500 italic pl-4 py-1">
+                              Descripción detallada en preparación.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Tech stack as clean inline tags (no nested pill containers) */}
                     {parsedSkills.length > 0 && (

@@ -39,12 +39,6 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Contacto</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-              Iniciemos una conversación
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono mt-3">
-              Disponible para nuevos retos en ingeniería de software, arquitectura cloud y colaboraciones técnicas.
-            </p>
           </div>
         </ScrollReveal>
 
@@ -56,9 +50,6 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
               <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 ¿Tienes un proyecto en mente?
               </h3>
-              <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
-                Escríbeme directamente por correo electrónico o a través de mis redes. Suelo responder en menos de 24 horas.
-              </p>
             </div>
 
             {/* Direct Email Action Row (No nested boxes) */}
@@ -103,7 +94,7 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
               {location && (
                 <div className="flex items-center gap-2 text-xs font-mono text-slate-400 pt-1">
                   <MapPin size={13} className="text-emerald-400" />
-                  <span>Ubicación base: {location}</span>
+                  <span>Ubicación: {location}</span>
                 </div>
               )}
             </div>
@@ -111,13 +102,10 @@ export function ContactSection({ email, location, socialLinks }: ContactSectionP
 
           {/* Social Presence: Open Editorial List (Right) */}
           <ScrollReveal delay={0.12} yOffset={20} className="lg:col-span-5 space-y-6">
-            <div className="border-b border-white/10 pb-3">
+            <div>
               <span className="text-xs font-mono text-slate-500 uppercase tracking-wider block">
                 Canales oficiales
               </span>
-              <h4 className="text-lg font-bold text-white tracking-tight mt-1">
-                Redes & Repositorios
-              </h4>
             </div>
 
             <StaggerContainer staggerDelay={0.06} className="divide-y divide-white/5">

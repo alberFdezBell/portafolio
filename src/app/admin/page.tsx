@@ -714,17 +714,23 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">Descripción</label>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                      Descripción detallada (se despliega con el botón &quot;&gt;&quot; en la web)
+                    </label>
                     <textarea
-                      rows={3}
+                      rows={4}
+                      placeholder="Detalla las responsabilidades, proyectos clave, logros técnicos o funciones en esta experiencia..."
                       value={exp.description || ""}
                       onChange={(e) => {
                         const updated = [...experiences];
                         updated[idx].description = e.target.value;
                         setExperiences(updated);
                       }}
-                      className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white"
+                      className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white placeholder-slate-500 leading-relaxed"
                     />
+                    <p className="text-[10px] text-slate-500 mt-1 font-mono">
+                      Esta descripción se despliega interactivamente al pulsar el botón &quot;&gt;&quot; de cada trayectoria en el portafolio.
+                    </p>
                   </div>
 
                   <div>
