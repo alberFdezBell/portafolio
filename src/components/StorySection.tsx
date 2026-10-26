@@ -97,7 +97,6 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
   // Render sliced paragraphs according to current typed position
   const currentTypedText = fullText.slice(0, charIndex);
   const currentParagraphs = currentTypedText ? currentTypedText.split("\n\n") : [];
-  const isTyping = hasStarted && charIndex < fullText.length;
 
   return (
     <section id="historia" className="py-28 border-t border-white/5 relative">
@@ -108,7 +107,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
           <div className="flex flex-col items-start mb-14">
             <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
-              <span>01 / Sobre mí & Historia</span>
+              <span>01 / Sobre mí</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
               Cómo empezó todo
@@ -121,7 +120,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
           <article className="border-l-2 border-emerald-500/20 pl-6 sm:pl-10 py-1 text-slate-300 select-text">
             <div className="flex items-center gap-2 text-xs font-mono text-slate-500 pb-6 select-none">
               <Terminal size={14} className="text-emerald-400" />
-              <span>log://narrativa-profesional</span>
+              <span>alberto@dev:~$ cat sobre-mi.txt</span>
             </div>
 
             <div className="relative">
@@ -164,14 +163,8 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
                 )}
               </div>
 
-              {/* Bottom Metadata with Clearfix */}
-              <div className="clear-both pt-8 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500 mt-8 select-none">
-                <span className="flex items-center gap-2">
-                  <span>EOF // bio documentada</span>
-                  {isTyping && <span className="text-[10px] text-emerald-400/60 font-mono">(escribiendo...)</span>}
-                </span>
-                <span className="text-emerald-400/80">alberto@dev:~$ ready_for_scale</span>
-              </div>
+              {/* Clearfix for floated image */}
+              <div className="clear-both" />
             </div>
           </article>
         </ScrollReveal>

@@ -93,10 +93,8 @@ export function Hero({
           isCompleted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         }`}
       >
-        <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-black group-hover:border-emerald-400 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg shadow-emerald-500/20 animate-bounce">
-          {/* Subtle pulsating radar ring */}
-          <span className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping pointer-events-none" />
-          <ArrowDown size={20} className="stroke-[2.5] relative z-10" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-black group-hover:border-emerald-400 transition-all duration-300 hover:scale-110 active:scale-95 animate-bounce">
+          <ArrowDown size={20} className="stroke-[2.5]" />
         </div>
         <span className="text-[11px] font-mono tracking-widest uppercase text-slate-400 group-hover:text-emerald-400 transition-colors select-none">
           Continuar
