@@ -63,7 +63,7 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
             return (
               <StaggerItem key={exp.id} yOffset={20}>
-                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+                <article className="border-b border-white/5 pb-12 sm:pb-16 last:border-b-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 group">
                   
                   {/* Left Column: Metadata (Period, Company, Location) */}
                   <div className="lg:col-span-4 space-y-2 font-mono">
@@ -82,8 +82,11 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
 
                   {/* Right Column: Role, Expandable Narrative & Technologies */}
                   <div className="lg:col-span-8 space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    <div className="inline-flex items-center gap-2 flex-wrap">
+                      <h3
+                        onClick={() => toggleExpand(exp.id)}
+                        className="text-xl sm:text-2xl font-bold text-white tracking-tight transition-colors duration-300 group-hover:text-slate-400 cursor-pointer"
+                      >
                         {exp.role}
                       </h3>
 
@@ -93,16 +96,12 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                         aria-expanded={isExpanded}
                         aria-controls={`exp-desc-${exp.id}`}
                         aria-label={isExpanded ? `Ocultar descripción de ${exp.role}` : `Mostrar descripción de ${exp.role}`}
-                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg border transition-all duration-300 flex items-center justify-center shrink-0 cursor-pointer ${
-                          isExpanded
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm shadow-emerald-500/10"
-                            : "bg-slate-900/60 border-white/10 hover:border-emerald-500/40 text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80"
-                        }`}
+                        className="p-1 text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer inline-flex items-center justify-center focus:outline-none"
                       >
                         <ChevronRight
-                          size={18}
+                          size={20}
                           className={`transition-transform duration-300 ease-in-out ${
-                            isExpanded ? "rotate-90 text-emerald-400" : "rotate-0 text-slate-400"
+                            isExpanded ? "rotate-90 text-emerald-400" : "rotate-0 text-slate-400 group-hover:text-slate-300"
                           }`}
                         />
                       </button>
