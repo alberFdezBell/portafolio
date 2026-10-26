@@ -1,11 +1,12 @@
 export interface IconItem {
   id: string;
   name: string;
-  category: "social" | "dev" | "cloud" | "tool" | "general";
-  type: "simple-icon" | "lucide";
+  category: "social" | "dev" | "cloud" | "tool" | "general" | "custom";
+  type: "simple-icon" | "lucide" | "custom";
   slug: string;
   cdnUrl?: string;
   color?: string;
+  isCustom?: boolean;
 }
 
 export const POPULAR_ICONS: IconItem[] = [
@@ -70,6 +71,15 @@ export function getIconRenderer(iconNameOrSlug?: string): { url?: string; isLuci
     return { isLucide: true, name: "external-link" };
   }
 
+  // If user entered direct URL or relative uploaded path (e.g. /uploads/...)
+  if (
+    iconNameOrSlug.startsWith("http://") ||
+    iconNameOrSlug.startsWith("https://") ||
+    iconNameOrSlug.startsWith("/")
+  ) {
+    return { url: iconNameOrSlug, isLucide: false, name: "icon" };
+  }
+
   const found = POPULAR_ICONS.find(
     (i) => i.id.toLowerCase() === iconNameOrSlug.toLowerCase() || i.slug.toLowerCase() === iconNameOrSlug.toLowerCase()
   );
@@ -79,11 +89,6 @@ export function getIconRenderer(iconNameOrSlug?: string): { url?: string; isLuci
       return { url: found.cdnUrl, isLucide: false, name: found.name };
     }
     return { isLucide: true, name: found.slug };
-  }
-
-  // If user entered direct URL
-  if (iconNameOrSlug.startsWith("http://") || iconNameOrSlug.startsWith("https://")) {
-    return { url: iconNameOrSlug, isLucide: false, name: "icon" };
   }
 
   // Fallback to SimpleIcons CDN dynamic URL

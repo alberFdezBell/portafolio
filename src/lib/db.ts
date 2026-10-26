@@ -97,6 +97,17 @@ function initSchema(database: Database.Database) {
       value TEXT NOT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS custom_icons (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      category TEXT DEFAULT 'custom',
+      type TEXT DEFAULT 'custom',
+      cdn_url TEXT,
+      color TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Seed default initial profile if none exists

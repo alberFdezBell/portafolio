@@ -13,13 +13,11 @@ import {
   LogOut,
   Plus,
   Trash2,
-  Edit,
   Save,
   Upload,
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  QrCode,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
