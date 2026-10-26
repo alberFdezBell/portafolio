@@ -47,7 +47,10 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
             } else {
               window.addEventListener("hero-typing-complete", startTyping, { once: true });
             }
-            observer.disconnect();
+          }
+          // If user scrolled past this section towards the bottom, complete immediately
+          if (entry.boundingClientRect.bottom < 0 && !entry.isIntersecting) {
+            setCharIndex(fullText.length);
           }
         },
         { threshold: 0.1 }
@@ -94,9 +97,43 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
     return () => clearTimeout(timer);
   }, [hasStarted, charIndex, fullText]);
 
-  // Render sliced paragraphs according to current typed position
-  const currentTypedText = fullText.slice(0, charIndex);
-  const currentParagraphs = currentTypedText ? currentTypedText.split("\n\n") : [];
+  // Pre-calculate paragraph offsets so full height and layout are 100% pre-reserved from frame 0
+  let currentOffset = 0;
+  let activeCursorPIndex = 0;
+  const paragraphData = paragraphs.map((p, idx) => {
+    const start = currentOffset;
+    const end = start + p.length;
+    currentOffset = end + 2; // account for \n\n separator
+
+    if (charIndex >= start) {
+      activeCursorPIndex = idx;
+    }
+
+    const isFullyTyped = charIndex >= end;
+    const isUntyped = charIndex <= start;
+    const isCurrentlyTyping = !isFullyTyped && !isUntyped;
+
+    let typedPart = "";
+    let untypedPart = p;
+
+    if (isFullyTyped) {
+      typedPart = p;
+      untypedPart = "";
+    } else if (isCurrentlyTyping) {
+      const sliceIdx = charIndex - start;
+      typedPart = p.slice(0, sliceIdx);
+      untypedPart = p.slice(sliceIdx);
+    }
+
+    return {
+      text: p,
+      isFullyTyped,
+      isUntyped,
+      isCurrentlyTyping,
+      typedPart,
+      untypedPart,
+    };
+  });
 
   return (
     <section id="historia" className="py-28 border-t border-white/5 relative">
@@ -137,30 +174,35 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
               </div>
 
               {/* Text Paragraphs wrapping around the image with Blinking Terminal Cursor */}
-              <div className="space-y-5 text-slate-300 text-base sm:text-lg leading-relaxed font-normal min-h-[160px]">
-                {currentParagraphs.length === 0 ? (
-                  <p className="text-slate-300/90 flex items-center">
-                    <span
-                      className="inline-block w-2 sm:w-2.5 h-4 sm:h-5 bg-emerald-400 terminal-cursor align-middle"
-                      aria-hidden="true"
-                    />
-                  </p>
-                ) : (
-                  currentParagraphs.map((p, index) => {
-                    const isLast = index === currentParagraphs.length - 1;
-                    return (
-                      <p key={index} className="text-slate-300/90">
-                        {p}
-                        {isLast && (
-                          <span
-                            className="inline-block w-2 sm:w-2.5 h-4 sm:h-5 bg-emerald-400 terminal-cursor ml-1.5 align-middle shrink-0"
-                            aria-hidden="true"
-                          />
-                        )}
-                      </p>
-                    );
-                  })
-                )}
+              <div className="space-y-5 text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
+                {paragraphData.map((data, index) => {
+                  const showCursorHere =
+                    index === activeCursorPIndex && charIndex < fullText.length;
+                  const isCompletedText =
+                    charIndex >= fullText.length && index === paragraphData.length - 1;
+
+                  return (
+                    <p key={index} className="text-slate-300/90 leading-relaxed">
+                      {data.typedPart && <span>{data.typedPart}</span>}
+
+                      {(showCursorHere || isCompletedText) && (
+                        <span
+                          className="inline-block w-2 sm:w-2.5 h-4 sm:h-5 bg-emerald-400 terminal-cursor ml-0.5 mr-0.5 align-middle shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+
+                      {data.untypedPart && (
+                        <span
+                          className="text-transparent select-none pointer-events-none"
+                          aria-hidden="true"
+                        >
+                          {data.untypedPart}
+                        </span>
+                      )}
+                    </p>
+                  );
+                })}
               </div>
 
               {/* Clearfix for floated image */}
