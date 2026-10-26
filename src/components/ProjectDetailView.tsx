@@ -204,7 +204,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
             strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-slate-400 group-hover:text-emerald-400 transition-all duration-300 ease-out origin-center transform scale-y-[0.45] group-hover:scale-y-[1.2] group-hover:-translate-x-0.5"
+            className="text-slate-400 group-hover:text-emerald-400 transition-all duration-300 ease-out origin-center transform scale-y-[0.45] group-hover:scale-y-[0.60] group-hover:-translate-x-0.5"
           >
             <polyline points="15 6 8 28 15 50" vectorEffect="non-scaling-stroke" />
           </svg>
