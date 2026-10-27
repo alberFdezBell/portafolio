@@ -29,7 +29,7 @@ export function EducationSection({ education }: EducationSectionProps) {
   };
 
   return (
-    <section id="estudios" className="py-28 border-t border-white/5 relative">
+    <section id="estudios" className="scroll-mt-20 py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Editorial Section Header */}

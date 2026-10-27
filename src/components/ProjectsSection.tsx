@@ -87,7 +87,7 @@ function renderStatusBadge(status?: string) {
 
 export function ProjectsSection({ projects, onSelectProject }: ProjectsSectionProps) {
   return (
-    <section id="proyectos" className="py-28 border-t border-white/5 relative">
+    <section id="proyectos" className="scroll-mt-20 py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>

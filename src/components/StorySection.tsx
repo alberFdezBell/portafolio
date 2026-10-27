@@ -136,7 +136,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
   });
 
   return (
-    <section id="historia" className="py-28 border-t border-white/5 relative">
+    <section id="historia" className="scroll-mt-20 py-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Editorial Section Header */}

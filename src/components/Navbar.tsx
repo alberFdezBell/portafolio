@@ -21,12 +21,26 @@ export function Navbar({ className = "" }: NavbarProps) {
   }, []);
 
   const navLinks = [
-    { name: "Historia", href: "#historia" },
-    { name: "Experiencia", href: "#experiencia" },
-    { name: "Proyectos", href: "#proyectos" },
-    { name: "Estudios", href: "#estudios" },
-    { name: "Contacto", href: "#contacto" },
+    { name: "Historia", targetId: "historia" },
+    { name: "Experiencia", targetId: "experiencia" },
+    { name: "Proyectos", targetId: "proyectos" },
+    { name: "Estudios", targetId: "estudios" },
+    { name: "Contacto", targetId: "contacto" },
   ];
+
+  const handleNavClick = (targetId: string) => {
+    setMobileMenuOpen(false);
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleBrandClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <header
@@ -40,7 +54,8 @@ export function Navbar({ className = "" }: NavbarProps) {
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 text-white font-mono text-sm tracking-tight hover:opacity-90 transition-opacity"
+          onClick={handleBrandClick}
+          className="flex items-center gap-2.5 text-white font-mono text-sm tracking-tight hover:opacity-90 transition-opacity cursor-pointer"
         >
           <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
             <img
@@ -57,13 +72,14 @@ export function Navbar({ className = "" }: NavbarProps) {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
-            <a
+            <button
               key={link.name}
-              href={link.href}
-              className="text-xs font-mono text-slate-400 hover:text-emerald-400 transition-colors uppercase tracking-wider"
+              type="button"
+              onClick={() => handleNavClick(link.targetId)}
+              className="text-xs font-mono text-slate-400 hover:text-emerald-400 transition-colors uppercase tracking-wider cursor-pointer focus:outline-none focus-visible:text-emerald-400"
             >
               {link.name}
-            </a>
+            </button>
           ))}
         </nav>
 
@@ -82,14 +98,14 @@ export function Navbar({ className = "" }: NavbarProps) {
         <div className="md:hidden bg-[#090d16]/95 border-b border-white/10 backdrop-blur-xl px-4 pt-4 pb-6 space-y-4">
           <nav className="flex flex-col space-y-3 font-mono text-sm">
             {navLinks.map((link) => (
-              <a
+              <button
                 key={link.name}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-slate-300 hover:text-emerald-400 transition-colors py-1 px-2 rounded-lg hover:bg-white/5"
+                type="button"
+                onClick={() => handleNavClick(link.targetId)}
+                className="text-left text-slate-300 hover:text-emerald-400 transition-colors py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer focus:outline-none focus-visible:text-emerald-400"
               >
                 {link.name}
-              </a>
+              </button>
             ))}
           </nav>
         </div>
