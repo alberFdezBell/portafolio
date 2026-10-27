@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Terminal, Shield, Menu, X } from "lucide-react";
+import { Shield, Menu, X } from "lucide-react";
 
 interface NavbarProps {
   statusBadge?: string;
@@ -38,13 +38,17 @@ export function Navbar({ statusBadge, className = "" }: NavbarProps) {
       } ${className}`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-        {/* Brand Terminal */}
+        {/* Brand */}
         <Link
           href="/"
           className="flex items-center gap-2.5 text-white font-mono text-sm tracking-tight hover:opacity-90 transition-opacity"
         >
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <Terminal size={18} />
+          <div className="w-8 h-8 rounded-lg overflow-hidden border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10 shrink-0">
+            <img
+              src="/afb.webp"
+              alt="Alberto Fernández Bellido"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-semibold text-slate-200">
             alberto<span className="text-emerald-400">@</span>dev<span className="text-slate-500">:~$</span>

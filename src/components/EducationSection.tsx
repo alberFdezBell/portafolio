@@ -42,9 +42,6 @@ export function EducationSection({ education }: EducationSectionProps) {
             <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
               Educación
             </h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono mt-3">
-              Bases académicas formales, certificaciones y profundización en ingeniería.
-            </p>
           </div>
         </ScrollReveal>
 

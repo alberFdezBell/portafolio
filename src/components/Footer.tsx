@@ -1,5 +1,4 @@
 import React from "react";
-import { Terminal } from "lucide-react";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -10,8 +9,12 @@ export function Footer() {
         
         {/* Left */}
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <Terminal size={14} />
+          <div className="w-6 h-6 rounded-md overflow-hidden border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10 shrink-0">
+            <img
+              src="/afb.webp"
+              alt="Alberto Fernández Bellido"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="text-slate-300">
             Portafolio Autónomo &copy; {year} Alberto Fernández Bellido
