@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { ExperienceItem } from "@/components/ExperienceSection";
 import { ProjectItem } from "@/components/ProjectsSection";
 import { EducationItem } from "@/components/EducationSection";
-import { SocialLinkItem } from "@/components/ContactSection";
+import { SocialLinkItem } from "@/components/Footer";
 import { PortfolioShell } from "@/components/PortfolioShell";
 import { generatePersonSchema, generateWebSiteSchema } from "@/lib/seo";
 

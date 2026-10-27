@@ -7,8 +7,7 @@ import { StorySection } from "./StorySection";
 import { ExperienceSection, ExperienceItem } from "./ExperienceSection";
 import { ProjectsSection, ProjectItem } from "./ProjectsSection";
 import { EducationSection, EducationItem } from "./EducationSection";
-import { ContactSection, SocialLinkItem } from "./ContactSection";
-import { Footer } from "./Footer";
+import { Footer, SocialLinkItem } from "./Footer";
 import { ProjectDetailView } from "./ProjectDetailView";
 
 interface PortfolioShellProps {
@@ -150,15 +149,13 @@ export function PortfolioShell({
           />
 
           <EducationSection education={education} />
-
-          <ContactSection
-            email={profile.email}
-            location={profile.location}
-            socialLinks={socialLinks}
-          />
         </main>
 
-        <Footer />
+        <Footer
+          email={profile.email}
+          location={profile.location}
+          socialLinks={socialLinks}
+        />
       </div>
 
       {/* SCREEN 2: Project Detail Screen (slides in from the right to left in lockstep) */}
