@@ -14,17 +14,22 @@ if (!fs.existsSync(uploadsDir)) {
 
 const dbPath = process.env.DATABASE_PATH || path.join(dataDir, "portfolio.db");
 
-// Singleton SQLite instance
-let db: Database.Database;
+// Singleton SQLite instance stored on globalThis to survive Next.js HMR in development
+declare global {
+  // eslint-disable-next-line no-var
+  var __portfolio_db: Database.Database | undefined;
+}
 
 export function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(dbPath);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    initSchema(db);
+  if (!globalThis.__portfolio_db) {
+    const instance = new Database(dbPath);
+    instance.pragma("journal_mode = WAL");
+    instance.pragma("foreign_keys = ON");
+    instance.pragma("busy_timeout = 5000"); // Wait up to 5s instead of throwing locked errors
+    initSchema(instance);
+    globalThis.__portfolio_db = instance;
   }
-  return db;
+  return globalThis.__portfolio_db;
 }
 
 function initSchema(database: Database.Database) {
