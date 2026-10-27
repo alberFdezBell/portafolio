@@ -41,6 +41,15 @@ export function Footer({
       className={`scroll-mt-24 border-t border-white/10 bg-[#090d16] pt-24 pb-12 text-slate-400 relative ${className}`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        {/* Editorial Section Header */}
+        <ScrollReveal yOffset={20}>
+          <div className="flex flex-col items-start mb-12">
+            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
+              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+              <span>05 / Contacto</span>
+            </div>
+          </div>
+        </ScrollReveal>
 
         {/* 12-column editorial grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -143,7 +152,7 @@ export function Footer({
         {/* Bottom copyright row with divider */}
         <div className="mt-16 sm:mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-slate-400">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md overflow-hidden border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10 shrink-0">
+            <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center shrink-0">
               <img
                 src="/afb.webp"
                 alt="Alberto Fernández Bellido"

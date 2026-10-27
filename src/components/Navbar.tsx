@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Shield, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 interface NavbarProps {
-  statusBadge?: string;
   className?: string;
 }
 
-export function Navbar({ statusBadge, className = "" }: NavbarProps) {
+export function Navbar({ className = "" }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -43,7 +42,7 @@ export function Navbar({ statusBadge, className = "" }: NavbarProps) {
           href="/"
           className="flex items-center gap-2.5 text-white font-mono text-sm tracking-tight hover:opacity-90 transition-opacity"
         >
-          <div className="w-8 h-8 rounded-lg overflow-hidden border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10 shrink-0">
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
             <img
               src="/afb.webp"
               alt="Alberto Fernández Bellido"
@@ -67,28 +66,6 @@ export function Navbar({ statusBadge, className = "" }: NavbarProps) {
             </a>
           ))}
         </nav>
-
-        {/* Actions & Status */}
-        <div className="hidden sm:flex items-center gap-4">
-          {statusBadge && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-300">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[11px] truncate max-w-[200px]">{statusBadge}</span>
-            </div>
-          )}
-
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-all shadow-sm"
-            title="Panel de Administración (2FA)"
-          >
-            <Shield size={14} className="text-emerald-400" />
-            <span>Admin</span>
-          </Link>
-        </div>
 
         {/* Mobile menu button */}
         <button
@@ -115,16 +92,6 @@ export function Navbar({ statusBadge, className = "" }: NavbarProps) {
               </a>
             ))}
           </nav>
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-slate-300"
-            >
-              <Shield size={14} className="text-emerald-400" />
-              <span>Panel Admin (2FA)</span>
-            </Link>
-          </div>
         </div>
       )}
     </header>

@@ -112,7 +112,6 @@ export function PortfolioShell({
     <div className="relative min-h-screen bg-[#090d16] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden">
       {/* Fixed Navbar with camera tracking pan transition synchronized */}
       <Navbar
-        statusBadge={profile.status_badge}
         className={`transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
           isDetailOpen ? "-translate-x-full pointer-events-none" : "translate-x-0"
         }`}
