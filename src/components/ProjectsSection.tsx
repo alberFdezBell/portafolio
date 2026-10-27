@@ -166,10 +166,6 @@ export function ProjectsSection({ projects, onSelectProject }: ProjectsSectionPr
                       <div className="flex items-baseline justify-between gap-2">
                         <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
                           <span>{proj.title}</span>
-                          <ArrowRight
-                            size={16}
-                            className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-emerald-400 shrink-0"
-                          />
                         </h3>
                         {!primaryImg && proj.featured === 1 && (
                           <span className="text-[11px] font-mono text-emerald-400">
