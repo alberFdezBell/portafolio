@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BookOpen, ArrowRight, Layers } from "lucide-react";
+import { ChevronRight, ArrowRight, Layers } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 export interface KnowledgeCategoryItem {
@@ -37,7 +37,7 @@ export function KnowledgeSection({
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col items-start mb-16">
+          <div className="flex flex-col items-start mb-12">
             <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Conocimientos</span>
@@ -51,44 +51,27 @@ export function KnowledgeSection({
           </div>
         </ScrollReveal>
 
-        {/* 3 Featured Categories Grid */}
+        {/* 3 Featured Categories (exact same card buttons as in the Categories Menu) */}
         {displayCategories.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+          <div className="grid grid-cols-1 gap-4 pt-2">
             {displayCategories.map((cat, idx) => (
-              <ScrollReveal key={cat.id} delay={0.06 * (idx + 1)} yOffset={20} className="h-full">
+              <ScrollReveal key={cat.id} delay={0.05 * (idx + 1)} yOffset={15}>
                 <button
                   type="button"
                   onClick={() => onSelectCategory(cat)}
                   aria-label={`Ver categoría de conocimiento: ${cat.name}`}
-                  className="group w-full h-full p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-900/30 hover:bg-slate-900/70 hover:border-emerald-500/40 transition-all duration-300 text-left flex flex-col justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm relative overflow-hidden"
+                  className="group w-full p-6 sm:p-7 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/90 hover:border-emerald-500/40 transition-all duration-200 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-sm active:scale-[0.99]"
                 >
-                  {/* Subtle hover accent light */}
-                  <div className="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/[0.04] rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
-
-                  <div className="space-y-4 relative z-10">
-                    <div className="flex items-center justify-between">
-                      <span className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
-                        <BookOpen size={16} />
-                      </span>
-                      <span className="text-[11px] font-mono text-slate-500 group-hover:text-emerald-400 transition-colors">
-                        0{idx + 1}
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight line-clamp-2">
-                      {cat.name}
-                    </h3>
-
-                    <p className="text-slate-400 text-xs sm:text-sm font-mono line-clamp-3">
-                      Notas técnicas, patrones y documentación sobre {cat.name}.
-                    </p>
-                  </div>
-
-                  <div className="pt-6 mt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400 group-hover:text-emerald-300 transition-colors relative z-10">
-                    <span>Leer artículo</span>
-                    <ArrowRight
-                      size={14}
-                      className="group-hover:translate-x-1 transition-transform text-emerald-400"
+                  <span className="text-lg sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
+                    {cat.name}
+                  </span>
+                  <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
+                    <span className="text-xs font-mono hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">
+                      Abrir
+                    </span>
+                    <ChevronRight
+                      size={20}
+                      className="group-hover:translate-x-1 transition-transform"
                     />
                   </div>
                 </button>
@@ -102,8 +85,8 @@ export function KnowledgeSection({
         )}
 
         {/* Button to explore all knowledge categories */}
-        <ScrollReveal delay={0.24} yOffset={15}>
-          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <ScrollReveal delay={0.22} yOffset={15}>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               type="button"
               onClick={onOpenAllKnowledge}
