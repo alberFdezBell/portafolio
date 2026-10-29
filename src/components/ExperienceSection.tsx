@@ -94,16 +94,16 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                       aria-expanded={isExpanded}
                       aria-controls={`exp-desc-${exp.id}`}
                       aria-label={isExpanded ? `Ocultar descripción de ${exp.role}` : `Mostrar descripción de ${exp.role}`}
-                      className="group/role inline-flex items-center gap-2 flex-wrap cursor-pointer focus:outline-none select-none"
+                      className="group/role inline-flex items-center gap-2 cursor-pointer focus:outline-none select-none max-w-full"
                     >
                       <h3
-                        className="text-xl sm:text-2xl font-bold text-white tracking-tight transition-colors duration-300 group-hover/role:text-slate-400"
+                        className="text-xl sm:text-2xl font-bold text-white tracking-tight transition-colors duration-300 group-hover/role:text-slate-400 min-w-0"
                       >
                         {exp.role}
                       </h3>
 
                       <span
-                        className="p-1 text-slate-400 hover:text-white transition-colors duration-200 inline-flex items-center justify-center"
+                        className="p-1 text-slate-400 hover:text-white transition-colors duration-200 inline-flex items-center justify-center shrink-0"
                       >
                         <ChevronRight
                           size={20}

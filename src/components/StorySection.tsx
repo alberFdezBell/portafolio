@@ -161,8 +161,8 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
             </div>
 
             <div className="relative">
-              {/* Profile Photo Floated Right on sm+ screens (compacta, sin borde, estática sin zoom) */}
-              <div className="float-none sm:float-right sm:ml-8 sm:mb-4 mb-6 w-44 sm:w-48 md:w-52 max-w-full">
+              {/* Profile Photo Floated Right on sm+ screens; hidden on mobile (compacta, sin borde, estática sin zoom) */}
+              <div className="hidden sm:block sm:float-right sm:ml-8 sm:mb-4 w-44 sm:w-48 md:w-52 max-w-full">
                 <div className="overflow-hidden rounded-xl">
                   <img
                     src={avatarUrl || "/alberto01.webp"}

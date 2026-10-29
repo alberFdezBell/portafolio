@@ -81,13 +81,13 @@ export function EducationSection({ education }: EducationSectionProps) {
                       aria-expanded={isExpanded}
                       aria-controls={`edu-desc-${item.id}`}
                       aria-label={isExpanded ? `Ocultar descripción de ${item.degree}` : `Mostrar descripción de ${item.degree}`}
-                      className="group/degree inline-flex items-center gap-2 flex-wrap cursor-pointer focus:outline-none select-none"
+                      className="group/degree inline-flex items-center gap-2 cursor-pointer focus:outline-none select-none max-w-full"
                     >
-                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight transition-colors duration-300 group-hover/degree:text-slate-400">
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight transition-colors duration-300 group-hover/degree:text-slate-400 min-w-0">
                         {item.degree}
                       </h3>
 
-                      <span className="p-1 text-slate-400 hover:text-white transition-colors duration-200 inline-flex items-center justify-center">
+                      <span className="p-1 text-slate-400 hover:text-white transition-colors duration-200 inline-flex items-center justify-center shrink-0">
                         <ChevronRight
                           size={18}
                           className={`transition-transform duration-300 ease-in-out ${
