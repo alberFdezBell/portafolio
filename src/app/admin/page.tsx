@@ -23,6 +23,7 @@ import {
   Star,
   X,
   Video,
+  Image as ImageIcon,
   BookOpen,
   Download,
   UploadCloud,

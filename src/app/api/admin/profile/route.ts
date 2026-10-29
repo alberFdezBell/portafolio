@@ -23,19 +23,23 @@ export async function PUT(req: NextRequest) {
   const db = getDb();
 
   db.prepare(`
-    UPDATE profile SET
-      name = ?,
-      title = ?,
-      short_bio = ?,
-      about_story = ?,
-      avatar_url = ?,
-      location = ?,
-      email = ?,
-      status_badge = ?,
-      github_url = ?,
-      linkedin_url = ?,
+    INSERT INTO profile (
+      id, name, title, short_bio, about_story, avatar_url, location, email, status_badge, github_url, linkedin_url, updated_at
+    ) VALUES (
+      1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+    )
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      title = excluded.title,
+      short_bio = excluded.short_bio,
+      about_story = excluded.about_story,
+      avatar_url = excluded.avatar_url,
+      location = excluded.location,
+      email = excluded.email,
+      status_badge = excluded.status_badge,
+      github_url = excluded.github_url,
+      linkedin_url = excluded.linkedin_url,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = 1
   `).run(
     data.name || "",
     data.title || "",
