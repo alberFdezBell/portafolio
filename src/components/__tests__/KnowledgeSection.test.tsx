@@ -40,9 +40,18 @@ const mockCategories: KnowledgeCategoryItem[] = [
   },
 ];
 
+const mockManyCategories: KnowledgeCategoryItem[] = Array.from({ length: 8 }, (_, i) => ({
+  id: i + 1,
+  name: `Categoría ${i + 1}`,
+  slug: `categoria-${i + 1}`,
+  content: `# Contenido ${i + 1}`,
+  order_num: i + 1,
+  featured: 0,
+}));
+
 describe("Knowledge Components", () => {
   describe("KnowledgeSection", () => {
-    it("renders section 05 and all categories without the 'Ver todos los conocimientos' button", () => {
+    it("renders section 05 and categories without pagination controls when <= 6", () => {
       const handleSelect = vi.fn();
 
       render(
@@ -61,8 +70,9 @@ describe("Knowledge Components", () => {
       expect(screen.getByText("Seguridad & 2FA")).toBeInTheDocument();
       expect(screen.getByText("Bases de Datos & SQLite")).toBeInTheDocument();
 
-      // "Ver todos los conocimientos" button is no longer present
-      expect(screen.queryByText(/ver todos los conocimientos/i)).not.toBeInTheDocument();
+      // Pagination controls are not present when <= 6
+      expect(screen.queryByLabelText(/página anterior/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/página siguiente/i)).not.toBeInTheDocument();
 
       // Clicking a category calls onSelectCategory
       const card = screen.getByRole("button", {
@@ -70,6 +80,36 @@ describe("Knowledge Components", () => {
       });
       fireEvent.click(card);
       expect(handleSelect).toHaveBeenCalledWith(mockCategories[0]);
+    });
+
+    it("renders pagination controls and switches page when categories > 6", () => {
+      const handleSelect = vi.fn();
+
+      render(
+        <KnowledgeSection
+          categories={mockManyCategories}
+          onSelectCategory={handleSelect}
+        />
+      );
+
+      // Page indicator 1 / 2
+      expect(screen.getByText("1 / 2")).toBeInTheDocument();
+
+      const prevBtn = screen.getByLabelText("Página anterior de conocimientos");
+      const nextBtn = screen.getByLabelText("Página siguiente de conocimientos");
+
+      expect(prevBtn).toBeDisabled();
+      expect(nextBtn).toBeEnabled();
+
+      // Click next page
+      fireEvent.click(nextBtn);
+      expect(screen.getByText("2 / 2")).toBeInTheDocument();
+      expect(prevBtn).toBeEnabled();
+      expect(nextBtn).toBeDisabled();
+
+      // Click previous page
+      fireEvent.click(prevBtn);
+      expect(screen.getByText("1 / 2")).toBeInTheDocument();
     });
   });
 

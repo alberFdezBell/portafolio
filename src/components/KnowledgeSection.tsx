@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { ChevronRight } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 export interface KnowledgeCategoryItem {
@@ -18,10 +18,29 @@ interface KnowledgeSectionProps {
   onSelectCategory: (category: KnowledgeCategoryItem) => void;
 }
 
+const ITEMS_PER_PAGE = 6;
+
 export function KnowledgeSection({
   categories = [],
   onSelectCategory,
 }: KnowledgeSectionProps) {
+  const [currentPage, setCurrentPage] = useState(0);
+  const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
+
+  const pages = useMemo(() => {
+    const chunks: KnowledgeCategoryItem[][] = [];
+    for (let i = 0; i < categories.length; i += ITEMS_PER_PAGE) {
+      chunks.push(categories.slice(i, i + ITEMS_PER_PAGE));
+    }
+    return chunks;
+  }, [categories]);
+
+  useEffect(() => {
+    if (currentPage >= totalPages && totalPages > 0) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [totalPages, currentPage]);
+
   return (
     <section
       id="conocimientos"
@@ -40,28 +59,71 @@ export function KnowledgeSection({
 
         {/* All Knowledge Categories / Articles */}
         {categories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {categories.map((cat, idx) => (
-              <ScrollReveal key={cat.id} delay={0.05 * (idx + 1)} yOffset={15}>
+          <ScrollReveal yOffset={15} delay={0.05}>
+            {/* Sliding Carousel Viewport */}
+            <div className="relative overflow-hidden w-full">
+              <div
+                className="flex transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                style={{ transform: `translateX(-${currentPage * 100}%)` }}
+              >
+                {pages.map((pageCategories, pageIndex) => (
+                  <div
+                    key={pageIndex}
+                    className="w-full shrink-0 grid grid-cols-1 gap-4"
+                    aria-hidden={pageIndex !== currentPage}
+                  >
+                    {pageCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        tabIndex={pageIndex === currentPage ? 0 : -1}
+                        onClick={() => onSelectCategory(cat)}
+                        aria-label={`Ver categoría de conocimiento: ${cat.name}`}
+                        className="group w-full p-6 sm:p-7 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/90 hover:border-emerald-500/40 transition-all duration-200 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-sm active:scale-[0.99]"
+                      >
+                        <span className="text-lg sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
+                          {cat.name}
+                        </span>
+                        <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
+                          <ChevronRight
+                            size={20}
+                            className="group-hover:translate-x-1 transition-transform"
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pagination controls when > 6 categories */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-3 font-mono text-xs sm:text-sm text-slate-400 select-none">
                 <button
                   type="button"
-                  onClick={() => onSelectCategory(cat)}
-                  aria-label={`Ver categoría de conocimiento: ${cat.name}`}
-                  className="group w-full p-6 sm:p-7 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/90 hover:border-emerald-500/40 transition-all duration-200 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-sm active:scale-[0.99]"
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  aria-label="Página anterior de conocimientos"
+                  className="p-1.5 sm:p-2 rounded-lg border border-white/10 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
                 >
-                  <span className="text-lg sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
-                    {cat.name}
-                  </span>
-                  <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
-                    <ChevronRight
-                      size={20}
-                      className="group-hover:translate-x-1 transition-transform"
-                    />
-                  </div>
+                  <ChevronLeft size={16} />
                 </button>
-              </ScrollReveal>
-            ))}
-          </div>
+                <span className="text-slate-300 tracking-wider">
+                  {currentPage + 1} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={currentPage === totalPages - 1}
+                  aria-label="Página siguiente de conocimientos"
+                  className="p-1.5 sm:p-2 rounded-lg border border-white/10 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </ScrollReveal>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-400 font-mono text-sm">
             No hay categorías de conocimientos registradas actualmente.
