@@ -31,7 +31,7 @@ export default function HomePage() {
     .all() as ExperienceItem[]) || [];
 
   const projects = (db
-    .prepare("SELECT * FROM projects ORDER BY featured DESC, order_num ASC, id DESC")
+    .prepare("SELECT * FROM projects ORDER BY order_num ASC, id DESC")
     .all() as ProjectItem[]) || [];
 
   const education = (db

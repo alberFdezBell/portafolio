@@ -241,14 +241,9 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
               {project.title}
             </h1>
 
-            {/* Pills de estado, proyecto destacado y tecnologías a la derecha */}
+            {/* Pills de estado y tecnologías a la derecha */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
               {renderStatusBadge(project.status)}
-              {project.featured === 1 && (
-                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                  ★ Proyecto Destacado
-                </span>
-              )}
               {techList.map((tech, idx) => (
                 <div
                   key={idx}

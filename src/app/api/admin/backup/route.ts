@@ -15,7 +15,7 @@ export async function GET() {
     const profile = db.prepare("SELECT * FROM profile WHERE id = 1").get() || null;
     const experiences = db.prepare("SELECT * FROM experiences ORDER BY order_num ASC, id DESC").all() || [];
     const education = db.prepare("SELECT * FROM education ORDER BY order_num ASC, id DESC").all() || [];
-    const projects = db.prepare("SELECT * FROM projects ORDER BY featured DESC, order_num ASC, id DESC").all() || [];
+    const projects = db.prepare("SELECT * FROM projects ORDER BY order_num ASC, id DESC").all() || [];
     const social_links = db.prepare("SELECT * FROM social_links ORDER BY order_num ASC, id ASC").all() || [];
     const custom_icons = db.prepare("SELECT * FROM custom_icons ORDER BY name ASC").all() || [];
 

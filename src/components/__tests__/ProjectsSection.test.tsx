@@ -120,7 +120,7 @@ describe("ProjectsSection", () => {
   });
 
   describe("ProjectDetailView", () => {
-    it("renders project title at top-left and status/featured pills below it", () => {
+    it("renders project title at top-left and status pill below it", () => {
       const handleClose = vi.fn();
 
       render(
@@ -139,7 +139,6 @@ describe("ProjectsSection", () => {
 
       // Pills
       expect(screen.getByText("Producción")).toBeInTheDocument();
-      expect(screen.getByText("★ Proyecto Destacado")).toBeInTheDocument();
 
       // Links & technologies rendered
       expect(screen.getByText("Código fuente")).toBeInTheDocument();

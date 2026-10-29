@@ -20,10 +20,8 @@ import {
   ExternalLink,
   ArrowUp,
   ArrowDown,
-  Star,
   X,
   Video,
-  Image as ImageIcon,
   BookOpen,
   Download,
   UploadCloud,
@@ -671,14 +669,13 @@ export default function AdminDashboardPage() {
   }, [editingKnowledge, knowledgeSnapshot]);
 
   const handleOpenNewKnowledge = () => {
-    const featuredCount = knowledgeCategories.filter((c) => c.featured === 1).length;
     const newCat: KnowledgeCategoryData = {
       id: "temp-" + Date.now(),
       name: "Nueva Categoría",
       slug: "nueva-categoria-" + Date.now(),
       content: "# Nueva Categoría\n\nEscribe aquí tus notas técnicas en formato Markdown...\n",
       order_num: knowledgeCategories.length + 1,
-      featured: featuredCount < 3 ? 1 : 0,
+      featured: 0,
       isNew: true,
     };
     setEditingKnowledge(newCat);
@@ -1089,12 +1086,6 @@ export default function AdminDashboardPage() {
                           >
                             {proj.status || "Producción"}
                           </span>
-                          {proj.featured === 1 && (
-                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                              <Star size={11} className="fill-emerald-400" />
-                              <span>Portada</span>
-                            </span>
-                          )}
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -1437,11 +1428,6 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4 className="text-base font-bold text-white truncate">{cat.name}</h4>
-                          {cat.featured === 1 && (
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
-                              ★ Portada
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs font-mono text-slate-400 truncate">
                           slug: {cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-")}
@@ -1969,7 +1955,7 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 md:col-span-2">
                   <label className="block text-xs font-mono text-slate-300">Estado del Proyecto</label>
                   <select
                     value={editingProject.status || "Producción"}
@@ -1982,23 +1968,6 @@ export default function AdminDashboardPage() {
                     <option value="En desarrollo">En desarrollo</option>
                     <option value="Finalizado">Finalizado</option>
                   </select>
-                </div>
-
-                <div className="space-y-1.5 flex flex-col justify-end">
-                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-white/10 bg-slate-900/60 text-xs font-mono text-slate-300 hover:border-emerald-500/30">
-                    <input
-                      type="checkbox"
-                      checked={editingProject.featured === 1}
-                      onChange={(e) =>
-                        setEditingProject({
-                          ...editingProject,
-                          featured: e.target.checked ? 1 : 0,
-                        })
-                      }
-                      className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
-                    />
-                    <span>Destacar en Portada (★ Destacado)</span>
-                  </label>
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
@@ -2884,7 +2853,7 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="block text-xs font-mono text-slate-300">Slug URL</label>
                   <input
                     type="text"
@@ -2895,23 +2864,6 @@ export default function AdminDashboardPage() {
                     placeholder="docker-cloud-architecture"
                     className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
                   />
-                </div>
-
-                <div className="space-y-1.5 flex flex-col justify-end">
-                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-white/10 bg-slate-900/60 text-xs font-mono text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={editingKnowledge.featured === 1}
-                      onChange={(e) =>
-                        setEditingKnowledge({
-                          ...editingKnowledge,
-                          featured: e.target.checked ? 1 : 0,
-                        })
-                      }
-                      className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
-                    />
-                    <span>Destacado en Portada (05 / Conocimientos)</span>
-                  </label>
                 </div>
 
                 {/* Markdown editor */}
