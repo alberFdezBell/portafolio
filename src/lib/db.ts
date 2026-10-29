@@ -116,6 +116,16 @@ function initSchema(database: Database.Database) {
       color TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS knowledge_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      slug TEXT,
+      content TEXT DEFAULT '',
+      order_num INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Migrate projects table if new columns are missing
@@ -244,5 +254,71 @@ function initSchema(database: Database.Database) {
       ('LinkedIn', 'https://linkedin.com/in/alberto-fernandez-bellido', 'linkedin', 2),
       ('Email', 'mailto:alberto.fernandez.bellido.8@gmail.com', 'mail', 3)
     `).run();
+  }
+
+  // Seed default knowledge categories if none exist
+  try {
+    const knowledgeCount = database.prepare("SELECT COUNT(*) as count FROM knowledge_categories").get() as { count: number };
+    if (knowledgeCount.count === 0) {
+      const insertCategory = database.prepare(`
+        INSERT INTO knowledge_categories (name, slug, content, order_num)
+        VALUES (?, ?, ?, ?)
+      `);
+
+      insertCategory.run(
+        "Arquitectura Cloud & Docker",
+        "arquitectura-cloud-docker",
+        `# Arquitectura Cloud y Contenedores
+
+En esta sección documento mis patrones de diseño para infraestructura moderna basada en contenedores y despliegues reproducibles.
+
+## Principios Fundamentales
+- **Inmutabilidad**: Cada imagen Docker contiene exactamente las dependencias necesarias.
+- **Aislamiento**: Redes internas dedicadas para separar bases de datos del tráfico público.
+- **Orquestación**: Gestión con Portainer y Docker Compose para despliegues subsegundo.
+
+\`\`\`yaml
+services:
+  app:
+    image: node:20-alpine
+    restart: always
+    networks:
+      - internal_net
+\`\`\`
+
+> La simplicidad operativa es el pilar de la fiabilidad en producción.`,
+        1
+      );
+
+      insertCategory.run(
+        "Frontend & Rendimiento",
+        "frontend-rendimiento",
+        `# Frontend de Alto Rendimiento
+
+Estrategias para optimizar Core Web Vitals, tiempos de carga y fluidez de renderizado en aplicaciones Next.js y React.
+
+## Pilares de Rendimiento
+- **Server-Side Rendering (SSR)** para primer byte rápido (TTFB).
+- **Sub-división de paquetes** y carga diferida de componentes pesados.
+- **Optimización de fuentes e imágenes** en formatos modernos como WebP/AVIF.`,
+        2
+      );
+
+      insertCategory.run(
+        "Seguridad & 2FA",
+        "seguridad-2fa",
+        `# Seguridad en Aplicaciones Web
+
+Diseño de sistemas defensivos multicapa y autenticación de doble factor.
+
+## Medidas Implementadas
+1. **TOTP (RFC 6238)**: Códigos de un solo uso basados en tiempo.
+2. **Rate Limiting**: Protección activa contra ataques de fuerza bruta en endpoints de login.
+3. **Cookies Seguras**: Atributos \`HttpOnly\`, \`SameSite=Strict\` y \`Secure\`.`,
+        3
+      );
+    }
+  } catch (err) {
+    console.error("Error seeding knowledge categories:", err);
   }
 }

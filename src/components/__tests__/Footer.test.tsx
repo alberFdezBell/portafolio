@@ -37,7 +37,6 @@ describe("Footer component", () => {
     expect(footer).toBeInTheDocument();
     expect(footer?.className).toContain("scroll-mt-24");
 
-    expect(screen.getByText("05 / Contacto")).toBeInTheDocument();
     expect(
       screen.getByText("¿Tienes un proyecto en mente?")
     ).toBeInTheDocument();

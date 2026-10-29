@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { ExperienceItem } from "@/components/ExperienceSection";
 import { ProjectItem } from "@/components/ProjectsSection";
 import { EducationItem } from "@/components/EducationSection";
+import { KnowledgeCategoryItem } from "@/components/KnowledgeSection";
 import { SocialLinkItem } from "@/components/Footer";
 import { PortfolioShell } from "@/components/PortfolioShell";
 import { generatePersonSchema, generateWebSiteSchema } from "@/lib/seo";
@@ -37,6 +38,10 @@ export default function HomePage() {
     .prepare("SELECT * FROM education ORDER BY order_num ASC, id DESC")
     .all() as EducationItem[]) || [];
 
+  const knowledgeCategories = (db
+    .prepare("SELECT * FROM knowledge_categories ORDER BY order_num ASC, id ASC")
+    .all() as KnowledgeCategoryItem[]) || [];
+
   const socialLinks = (db
     .prepare("SELECT * FROM social_links ORDER BY order_num ASC, id ASC")
     .all() as SocialLinkItem[]) || [];
@@ -62,6 +67,7 @@ export default function HomePage() {
         experiences={experiences}
         projects={projects}
         education={education}
+        knowledgeCategories={knowledgeCategories}
         socialLinks={socialLinks}
       />
     </>

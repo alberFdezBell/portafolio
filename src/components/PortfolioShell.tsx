@@ -7,6 +7,9 @@ import { StorySection } from "./StorySection";
 import { ExperienceSection, ExperienceItem } from "./ExperienceSection";
 import { ProjectsSection, ProjectItem } from "./ProjectsSection";
 import { EducationSection, EducationItem } from "./EducationSection";
+import { KnowledgeSection, KnowledgeCategoryItem } from "./KnowledgeSection";
+import { KnowledgeCategoryMenuView } from "./KnowledgeCategoryMenuView";
+import { KnowledgeDetailView } from "./KnowledgeDetailView";
 import { Footer, SocialLinkItem } from "./Footer";
 import { ProjectDetailView } from "./ProjectDetailView";
 
@@ -15,6 +18,7 @@ interface PortfolioShellProps {
   experiences: ExperienceItem[];
   projects: ProjectItem[];
   education: EducationItem[];
+  knowledgeCategories?: KnowledgeCategoryItem[];
   socialLinks: SocialLinkItem[];
 }
 
@@ -23,22 +27,31 @@ export function PortfolioShell({
   experiences,
   projects,
   education,
+  knowledgeCategories = [],
   socialLinks,
 }: PortfolioShellProps) {
+  // Project Detail state
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isOpeningRef = useRef(false);
+  const projectCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isProjectOpeningRef = useRef(false);
 
+  // Knowledge Menu & Detail state
+  const [isKnowledgeMenuOpen, setIsKnowledgeMenuOpen] = useState(false);
+  const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] =
+    useState<KnowledgeCategoryItem | null>(null);
+  const [isKnowledgeDetailOpen, setIsKnowledgeDetailOpen] = useState(false);
+  const knowledgeCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isKnowledgeOpeningRef = useRef(false);
+
+  // --- PROJECT DETAIL HANDLERS ---
   const handleOpenProject = (proj: ProjectItem) => {
-    // If already open or opening, ignore rapid clicks
-    if (isDetailOpen || isOpeningRef.current) return;
-    isOpeningRef.current = true;
+    if (isDetailOpen || isProjectOpeningRef.current) return;
+    isProjectOpeningRef.current = true;
 
-    // Clear any pending close timer so selectedProject is never cleared
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
+    if (projectCloseTimerRef.current) {
+      clearTimeout(projectCloseTimerRef.current);
+      projectCloseTimerRef.current = null;
     }
 
     setSelectedProject(proj);
@@ -48,48 +61,108 @@ export function PortfolioShell({
       document.body.style.overflow = "hidden";
     }
 
-    // Two animation frames ensure browser registers the off-screen start state before transition
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsDetailOpen(true);
         setTimeout(() => {
-          isOpeningRef.current = false;
+          isProjectOpeningRef.current = false;
         }, 750);
       });
     });
   };
 
   const handleCloseProject = () => {
-    if (isOpeningRef.current) return;
+    if (isProjectOpeningRef.current) return;
 
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
+    if (projectCloseTimerRef.current) {
+      clearTimeout(projectCloseTimerRef.current);
     }
 
     setIsDetailOpen(false);
 
-    // Restore body overflow at the START of the animation so the page layout is established immediately
     if (typeof document !== "undefined") {
       document.body.style.overflow = "";
-      // Keep scrollbar-hidden active during the slide animation so the scrollbar starts invisible
     }
 
-    // When the 750ms slide transition finishes, smoothly reveal the scrollbar thumb
-    closeTimerRef.current = setTimeout(() => {
+    projectCloseTimerRef.current = setTimeout(() => {
       setSelectedProject(null);
       if (typeof document !== "undefined") {
         document.body.classList.remove("scrollbar-hidden");
       }
-      closeTimerRef.current = null;
+      projectCloseTimerRef.current = null;
+    }, 750);
+  };
+
+  // --- KNOWLEDGE HANDLERS ---
+  const handleOpenKnowledgeMenu = () => {
+    if (isKnowledgeMenuOpen || isKnowledgeOpeningRef.current) return;
+    isKnowledgeOpeningRef.current = true;
+
+    if (knowledgeCloseTimerRef.current) {
+      clearTimeout(knowledgeCloseTimerRef.current);
+      knowledgeCloseTimerRef.current = null;
+    }
+
+    if (typeof document !== "undefined") {
+      document.body.classList.add("scrollbar-hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsKnowledgeMenuOpen(true);
+        setTimeout(() => {
+          isKnowledgeOpeningRef.current = false;
+        }, 750);
+      });
+    });
+  };
+
+  const handleCloseKnowledgeMenu = () => {
+    if (isKnowledgeOpeningRef.current) return;
+
+    if (knowledgeCloseTimerRef.current) {
+      clearTimeout(knowledgeCloseTimerRef.current);
+    }
+
+    setIsKnowledgeMenuOpen(false);
+
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "";
+    }
+
+    knowledgeCloseTimerRef.current = setTimeout(() => {
+      if (typeof document !== "undefined") {
+        document.body.classList.remove("scrollbar-hidden");
+      }
+      knowledgeCloseTimerRef.current = null;
+    }, 750);
+  };
+
+  const handleSelectKnowledgeCategory = (cat: KnowledgeCategoryItem) => {
+    setSelectedKnowledgeCategory(cat);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsKnowledgeDetailOpen(true);
+      });
+    });
+  };
+
+  const handleCloseKnowledgeDetail = () => {
+    setIsKnowledgeDetailOpen(false);
+    // Keep selectedKnowledgeCategory until transition completes to avoid flash of empty
+    setTimeout(() => {
+      if (!isKnowledgeDetailOpen) {
+        setSelectedKnowledgeCategory(null);
+      }
     }, 750);
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
+      if (projectCloseTimerRef.current) clearTimeout(projectCloseTimerRef.current);
+      if (knowledgeCloseTimerRef.current) clearTimeout(knowledgeCloseTimerRef.current);
       if (typeof document !== "undefined") {
         document.body.style.overflow = "";
         document.body.classList.remove("scrollbar-hidden");
@@ -97,30 +170,39 @@ export function PortfolioShell({
     };
   }, []);
 
-  // Keyboard accessibility: Escape key closes the detail view
+  // Keyboard accessibility: Escape key closes the outermost active view
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isDetailOpen) {
-        handleCloseProject();
+      if (e.key === "Escape") {
+        if (isKnowledgeDetailOpen) {
+          handleCloseKnowledgeDetail();
+        } else if (isKnowledgeMenuOpen) {
+          handleCloseKnowledgeMenu();
+        } else if (isDetailOpen) {
+          handleCloseProject();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDetailOpen]);
+  }, [isKnowledgeDetailOpen, isKnowledgeMenuOpen, isDetailOpen]);
+
+  const isAnyOverlayActive =
+    isDetailOpen || isKnowledgeMenuOpen || isKnowledgeDetailOpen;
 
   return (
     <div className="relative min-h-screen bg-[#090d16] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden">
       {/* Fixed Navbar with camera tracking pan transition synchronized */}
       <Navbar
         className={`transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
-          isDetailOpen ? "-translate-x-full pointer-events-none" : "translate-x-0"
+          isAnyOverlayActive ? "-translate-x-full pointer-events-none" : "translate-x-0"
         }`}
       />
 
       {/* SCREEN 1: Main Portfolio Screen (slides to the left as camera pans right) */}
       <div
         className={`w-full min-h-screen transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
-          isDetailOpen ? "-translate-x-full pointer-events-none" : "translate-x-0"
+          isAnyOverlayActive ? "-translate-x-full pointer-events-none" : "translate-x-0"
         }`}
       >
         <main id="main-content">
@@ -148,6 +230,11 @@ export function PortfolioShell({
           />
 
           <EducationSection education={education} />
+
+          <KnowledgeSection
+            categories={knowledgeCategories}
+            onOpenKnowledge={handleOpenKnowledgeMenu}
+          />
         </main>
 
         <Footer
@@ -157,7 +244,7 @@ export function PortfolioShell({
         />
       </div>
 
-      {/* SCREEN 2: Project Detail Screen (slides in from the right to left in lockstep) */}
+      {/* SCREEN 2 (Projects): Project Detail Screen */}
       <div
         aria-hidden={!isDetailOpen}
         className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
@@ -171,7 +258,39 @@ export function PortfolioShell({
           />
         )}
       </div>
+
+      {/* SCREEN 2 (Knowledge): Knowledge Category Menu Screen */}
+      <div
+        aria-hidden={!isKnowledgeMenuOpen}
+        className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
+          isKnowledgeMenuOpen && !isKnowledgeDetailOpen
+            ? "translate-x-0"
+            : isKnowledgeDetailOpen
+            ? "-translate-x-full pointer-events-none"
+            : "translate-x-full pointer-events-none"
+        }`}
+      >
+        <KnowledgeCategoryMenuView
+          categories={knowledgeCategories}
+          onSelectCategory={handleSelectKnowledgeCategory}
+          onClose={handleCloseKnowledgeMenu}
+        />
+      </div>
+
+      {/* SCREEN 3 (Knowledge): Knowledge Category Markdown / Blog Viewer */}
+      <div
+        aria-hidden={!isKnowledgeDetailOpen}
+        className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
+          isKnowledgeDetailOpen ? "translate-x-0" : "translate-x-full pointer-events-none"
+        }`}
+      >
+        {selectedKnowledgeCategory && (
+          <KnowledgeDetailView
+            category={selectedKnowledgeCategory}
+            onClose={handleCloseKnowledgeDetail}
+          />
+        )}
+      </div>
     </div>
   );
 }
-

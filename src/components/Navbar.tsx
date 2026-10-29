@@ -25,6 +25,7 @@ export function Navbar({ className = "" }: NavbarProps) {
     { name: "Experiencia", targetId: "experiencia" },
     { name: "Proyectos", targetId: "proyectos" },
     { name: "Estudios", targetId: "estudios" },
+    { name: "Conocimientos", targetId: "conocimientos" },
     { name: "Contacto", targetId: "contacto" },
   ];
 

@@ -25,6 +25,7 @@ import {
   X,
   Video,
   Image as ImageIcon,
+  BookOpen,
   Download,
   UploadCloud,
   Database,
@@ -38,7 +39,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<
-    "profile" | "experience" | "education" | "projects" | "social" | "security"
+    "profile" | "experience" | "education" | "projects" | "knowledge" | "social" | "security"
   >("profile");
 
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,7 @@ export default function AdminDashboardPage() {
   const [experiences, setExperiences] = useState<any[]>([]);
   const [education, setEducation] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [knowledgeCategories, setKnowledgeCategories] = useState<any[]>([]);
   const [socials, setSocials] = useState<any[]>([]);
   const [twoFactorData, setTwoFactorData] = useState<any>(null);
 
@@ -77,12 +79,13 @@ export default function AdminDashboardPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [resProf, resExp, resEdu, resProj, resSoc] = await Promise.all([
+      const [resProf, resExp, resEdu, resProj, resSoc, resKnow] = await Promise.all([
         fetch("/api/admin/profile"),
         fetch("/api/admin/experience"),
         fetch("/api/admin/education"),
         fetch("/api/admin/projects"),
         fetch("/api/admin/social"),
+        fetch("/api/admin/knowledge"),
       ]);
 
       if (
@@ -90,7 +93,8 @@ export default function AdminDashboardPage() {
         resExp.status === 401 ||
         resEdu.status === 401 ||
         resProj.status === 401 ||
-        resSoc.status === 401
+        resSoc.status === 401 ||
+        resKnow.status === 401
       ) {
         router.push("/login");
         return;
@@ -101,6 +105,7 @@ export default function AdminDashboardPage() {
       setEducation(await resEdu.json());
       setProjects(await resProj.json());
       setSocials(await resSoc.json());
+      setKnowledgeCategories(await resKnow.json());
     } catch {
       notify("Error cargando los datos", "error");
     } finally {
@@ -527,6 +532,107 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Knowledge Categories Mutations
+  const handleAddKnowledgeCategory = () => {
+    setKnowledgeCategories([
+      ...knowledgeCategories,
+      {
+        id: "temp-" + Date.now(),
+        name: "Nueva Categoría",
+        slug: "nueva-categoria-" + Date.now(),
+        content: "# Nueva Categoría\n\nEscribe aquí tus notas técnicas en formato Markdown...\n",
+        order_num: knowledgeCategories.length + 1,
+        isNew: true,
+      },
+    ]);
+  };
+
+  const handleSaveKnowledgeCategory = async (item: any) => {
+    setSaving(true);
+    try {
+      const method = item.isNew ? "POST" : "PUT";
+      const res = await fetch("/api/admin/knowledge", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      if (!res.ok) throw new Error("Error guardando categoría");
+      notify("Categoría guardada con éxito.");
+      fetchAllData();
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteKnowledgeCategory = async (id: number | string) => {
+    if (typeof id === "string" && id.startsWith("temp-")) {
+      setKnowledgeCategories(knowledgeCategories.filter((c) => c.id !== id));
+      return;
+    }
+    if (!confirm("¿Eliminar esta categoría de conocimientos?")) return;
+    try {
+      await fetch(`/api/admin/knowledge?id=${id}`, { method: "DELETE" });
+      notify("Categoría eliminada.");
+      fetchAllData();
+    } catch {
+      notify("Error al eliminar categoría", "error");
+    }
+  };
+
+  const handleMoveKnowledgeCategory = async (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= knowledgeCategories.length) return;
+
+    const reordered = [...knowledgeCategories];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const updated = reordered.map((item, i) => ({
+      ...item,
+      order_num: i + 1,
+    }));
+    setKnowledgeCategories(updated);
+
+    try {
+      await fetch("/api/admin/knowledge", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated.filter((item) => !item.isNew && typeof item.id === "number")),
+      });
+      notify("Orden de categorías actualizado.");
+    } catch {
+      notify("Error al actualizar el orden de categorías", "error");
+    }
+  };
+
+  const handleAttachKnowledgeImage = async (categoryIdx: number, file: File) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    notify("Subiendo imagen adjunta...", "success");
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Error al subir imagen");
+      const data = await res.json();
+      if (!data.url) throw new Error("No se devolvió la URL de la imagen");
+
+      const updated = [...knowledgeCategories];
+      const curContent = updated[categoryIdx].content || "";
+      const imageMarkdown = `\n\n![${file.name.replace(/\.[^/.]+$/, "")}](${data.url})\n\n`;
+      updated[categoryIdx].content = curContent + imageMarkdown;
+      setKnowledgeCategories(updated);
+      notify("Imagen adjuntada al contenido markdown.");
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : "Error al subir imagen", "error");
+    }
+  };
+
   // Social Links Mutations
   const handleAddSocial = () => {
     setSocials([
@@ -682,6 +788,7 @@ export default function AdminDashboardPage() {
             { id: "experience", label: "Experiencia Laboral", icon: Briefcase },
             { id: "projects", label: "Proyectos", icon: FolderGit2 },
             { id: "education", label: "Estudios & Certs", icon: GraduationCap },
+            { id: "knowledge", label: "Conocimientos", icon: BookOpen },
             { id: "social", label: "Redes & CDN Iconos", icon: Share2 },
             { id: "security", label: "Seguridad & 2FA", icon: KeyRound },
           ].map((tab) => {
@@ -2063,7 +2170,386 @@ Explicación detallada del proyecto, decisiones técnicas y soluciones implement
           </div>
         )}
 
-        {/* TAB 5: SOCIAL LINKS & CDN ICON SEARCH */}
+        {/* TAB 5: KNOWLEDGE CATEGORIES & MARKDOWN BLOG */}
+        {activeTab === "knowledge" && (
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <BookOpen size={20} className="text-emerald-400" />
+                  <span>Categorías de Conocimientos & Blog Técnico (05 / Conocimientos)</span>
+                </h2>
+                <p className="text-xs text-slate-400 font-mono mt-1">
+                  Gestiona las categorías que se despliegan en la sección 05, su contenido en Markdown y fotos adjuntas.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddKnowledgeCategory}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shrink-0 active:scale-95 cursor-pointer"
+              >
+                <Plus size={15} />
+                <span>Añadir Categoría</span>
+              </button>
+            </div>
+
+            {knowledgeCategories.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d1322] p-12 text-center space-y-3">
+                <BookOpen size={36} className="mx-auto text-slate-600" />
+                <p className="text-sm font-mono text-slate-300">No hay categorías de conocimientos registradas.</p>
+                <p className="text-xs font-mono text-slate-500">Crea una nueva categoría para que aparezca en la sección 05 del portafolio.</p>
+                <button
+                  type="button"
+                  onClick={handleAddKnowledgeCategory}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 mt-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
+                >
+                  <Plus size={14} />
+                  <span>Crear Primera Categoría</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {knowledgeCategories.map((cat, idx) => {
+                  const isPreview = !!markdownPreviews["know-" + cat.id];
+                  return (
+                    <div
+                      key={cat.id}
+                      className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-6 shadow-xl"
+                    >
+                      {/* Top Header: Order, Title and Quick Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                          {/* Order Buttons */}
+                          <div className="flex items-center gap-1 bg-slate-900 border border-white/10 rounded-lg p-1">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveKnowledgeCategory(idx, "up")}
+                              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+                              title="Subir posición"
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <span className="text-xs font-mono text-emerald-400 px-1 font-semibold">
+                              #{idx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={idx === knowledgeCategories.length - 1}
+                              onClick={() => handleMoveKnowledgeCategory(idx, "down")}
+                              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+                              title="Bajar posición"
+                            >
+                              <ArrowDown size={14} />
+                            </button>
+                          </div>
+
+                          <span className="text-xs font-mono text-slate-400 hidden sm:inline">
+                            Categoría de Conocimientos
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteKnowledgeCategory(cat.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>Eliminar</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => handleSaveKnowledgeCategory(cat)}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                          >
+                            <Save size={13} />
+                            <span>{saving ? "Guardando..." : "Guardar"}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Main Fields: Nombre y Slug */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-mono text-slate-300">
+                            Nombre de la Categoría <span className="text-emerald-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={cat.name || ""}
+                            onChange={(e) => {
+                              const updated = [...knowledgeCategories];
+                              updated[idx].name = e.target.value;
+                              // Auto slug if isNew
+                              if (cat.isNew) {
+                                updated[idx].slug = e.target.value
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9]+/g, "-")
+                                  .replace(/^-|-$/g, "");
+                              }
+                              setKnowledgeCategories(updated);
+                            }}
+                            placeholder="Ej. Arquitectura Cloud & Docker"
+                            className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-mono text-slate-300">
+                            Slug (Identificador URL)
+                          </label>
+                          <input
+                            type="text"
+                            value={cat.slug || ""}
+                            onChange={(e) => {
+                              const updated = [...knowledgeCategories];
+                              updated[idx].slug = e.target.value;
+                              setKnowledgeCategories(updated);
+                            }}
+                            placeholder="arquitectura-cloud-docker"
+                            className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Markdown Content & Image Attachment */}
+                      <div className="space-y-3 pt-2 border-t border-white/5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <label className="block text-xs font-mono text-slate-300">
+                              Contenido (.md / Blog)
+                            </label>
+                            <span className="text-[10px] font-mono text-emerald-400/80 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                              Markdown habilitado
+                            </span>
+                          </div>
+
+                          {/* Edit / Preview Tabs */}
+                          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-white/5 text-xs font-mono">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMarkdownPreviews((prev) => ({
+                                  ...prev,
+                                  ["know-" + cat.id]: false,
+                                }));
+                              }}
+                              className={`px-3 py-1 rounded transition-colors ${
+                                !isPreview
+                                  ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                  : "text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMarkdownPreviews((prev) => ({
+                                  ...prev,
+                                  ["know-" + cat.id]: true,
+                                }));
+                              }}
+                              className={`px-3 py-1 rounded transition-colors ${
+                                isPreview
+                                  ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                  : "text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              Vista Previa
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Markdown Toolbar & Content Area */}
+                        {!isPreview ? (
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-slate-950/70 border border-white/5 text-xs font-mono">
+                              <button
+                                type="button"
+                                title="Título 1"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur}\n\n# Encabezado Principal\n` : `# Encabezado Principal\n`;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
+                              >
+                                # H1
+                              </button>
+                              <button
+                                type="button"
+                                title="Título 2"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur}\n\n## Subtítulo\n` : `## Subtítulo\n`;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                ## H2
+                              </button>
+                              <button
+                                type="button"
+                                title="Título 3"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur}\n\n### Sección\n` : `### Sección\n`;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                ### H3
+                              </button>
+                              <span className="w-px h-4 bg-white/10 mx-0.5" />
+                              <button
+                                type="button"
+                                title="Negrita"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur} **texto en negrita** ` : `**texto en negrita** `;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                title="Cursiva"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur} *texto en cursiva* ` : `*texto en cursiva* `;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors italic"
+                              >
+                                I
+                              </button>
+                              <button
+                                type="button"
+                                title="Lista"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur}\n- Elemento 1\n- Elemento 2\n` : `- Elemento 1\n- Elemento 2\n`;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                • Lista
+                              </button>
+                              <button
+                                type="button"
+                                title="Código en línea"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur} \`código\` ` : `\`código\` `;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                `código`
+                              </button>
+                              <button
+                                type="button"
+                                title="Bloque de código"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur}\n\`\`\`typescript\n// Tu código aquí\n\`\`\`\n` : `\`\`\`typescript\n// Tu código aquí\n\`\`\`\n`;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                ```bloque```
+                              </button>
+                              <button
+                                type="button"
+                                title="Enlace"
+                                onClick={() => {
+                                  const updated = [...knowledgeCategories];
+                                  const cur = updated[idx].content || "";
+                                  updated[idx].content = cur ? `${cur} [Texto del enlace](https://...) ` : `[Texto del enlace](https://...) `;
+                                  setKnowledgeCategories(updated);
+                                }}
+                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
+                              >
+                                Enlace
+                              </button>
+                              <span className="w-px h-4 bg-white/10 mx-0.5" />
+
+                              {/* Button to attach photos / images */}
+                              <label
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer"
+                                title="Adjuntar foto o imagen en el texto del .md"
+                              >
+                                <Upload size={13} />
+                                <span>Adjuntar Foto / Imagen</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleAttachKnowledgeImage(idx, file);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+
+                            <textarea
+                              rows={12}
+                              value={cat.content || ""}
+                              onChange={(e) => {
+                                const updated = [...knowledgeCategories];
+                                updated[idx].content = e.target.value;
+                                setKnowledgeCategories(updated);
+                              }}
+                              placeholder="Escribe el artículo o notas en formato Markdown:
+# Mi Guía Técnica
+Explicación detallada de la arquitectura, decisiones de diseño y lecciones aprendidas.
+
+![Diagrama](/uploads/ejemplo.webp)
+
+```bash
+docker compose up -d
+```"
+                              className="w-full rounded-xl border border-white/10 bg-slate-900 p-4 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50 font-mono"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full min-h-[220px] max-h-[500px] overflow-y-auto rounded-xl border border-white/10 bg-slate-950 p-6 text-sm text-white">
+                            {cat.content && cat.content.trim().length > 0 ? (
+                              <MarkdownRenderer content={cat.content} />
+                            ) : (
+                              <p className="text-slate-500 italic font-mono text-xs">
+                                No hay contenido Markdown redactado para previsualizar.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: SOCIAL LINKS & CDN ICON SEARCH */}
         {activeTab === "social" && (
           <div className="mt-8 space-y-6">
             <div className="flex items-center justify-between">
