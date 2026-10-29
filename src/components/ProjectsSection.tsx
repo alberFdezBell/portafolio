@@ -122,15 +122,6 @@ export function ProjectsSection({ projects = [], onSelectProject }: ProjectsSect
                     aria-hidden={pageIndex !== currentPage}
                   >
                     {pageProjects.map((proj) => {
-                      let parsedTech: string[] = [];
-                      try {
-                        parsedTech = JSON.parse(proj.tech_stack || "[]");
-                      } catch {
-                        parsedTech = proj.tech_stack
-                          ? proj.tech_stack.split(",").map((s) => s.trim())
-                          : [];
-                      }
-
                       return (
                         <article
                           key={proj.id}
@@ -151,31 +142,19 @@ export function ProjectsSection({ projects = [], onSelectProject }: ProjectsSect
                             }
                           }}
                           aria-label={`Ver detalles del proyecto ${proj.title}`}
-                          className="aspect-square w-full group rounded-xl border border-white/10 hover:border-emerald-500/40 bg-slate-900/30 hover:bg-slate-900/70 p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm active:scale-[0.99] select-none"
+                          className="aspect-[2/1] w-full group rounded-xl border border-white/10 hover:border-emerald-500/40 bg-slate-900/30 hover:bg-slate-900/70 p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm active:scale-[0.99] select-none"
                         >
-                          {/* Arriba a la derecha: Estado (solamente la pill de estado) */}
-                          <div className="flex items-center justify-end w-full">
-                            {renderStatusBadge(proj.status)}
-                          </div>
-
                           {/* Centro: Nombre del proyecto */}
-                          <div className="my-auto py-2">
-                            <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight line-clamp-3">
+                          <div className="my-auto py-1">
+                            <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight line-clamp-2">
                               {proj.title}
                             </h3>
                           </div>
 
-                          {/* Abajo a la izquierda: primeras tecnologias | Abajo a la derecha: Ver proyecto */}
-                          <div className="flex items-end justify-between gap-3 pt-4 border-t border-white/5 font-mono text-xs">
-                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 overflow-hidden line-clamp-1 max-w-[65%]">
-                              {parsedTech.slice(0, 3).map((tech, idx) => (
-                                <span
-                                  key={idx}
-                                  className="hover:text-emerald-300 transition-colors"
-                                >
-                                  #{tech}
-                                </span>
-                              ))}
+                          {/* Abajo a la izquierda: Pill de estado | Abajo a la derecha: Ver proyecto */}
+                          <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/5 font-mono text-xs">
+                            <div className="shrink-0">
+                              {renderStatusBadge(proj.status)}
                             </div>
                             <span className="text-[11px] sm:text-xs text-slate-400 group-hover:text-emerald-300 transition-colors flex items-center gap-1 shrink-0">
                               <span>Ver proyecto</span>

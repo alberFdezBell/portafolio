@@ -43,7 +43,7 @@ const mockManyProjects: ProjectItem[] = Array.from({ length: 8 }, (_, i) => ({
 }));
 
 describe("ProjectsSection", () => {
-  it("renders project cards with title, status pill, first technologies and 'Ver proyecto'", () => {
+  it("renders project cards with title, status pill and 'Ver proyecto'", () => {
     const handleSelect = vi.fn();
 
     render(
@@ -64,12 +64,9 @@ describe("ProjectsSection", () => {
     expect(screen.getByText("Producción")).toBeInTheDocument();
     expect(screen.getByText("En desarrollo")).toBeInTheDocument();
 
-    // First tech tags (up to 3)
-    expect(screen.getByText("#Next.js")).toBeInTheDocument();
-    expect(screen.getByText("#TypeScript")).toBeInTheDocument();
-    expect(screen.getByText("#TailwindCSS")).toBeInTheDocument();
-    // 4th tech should be truncated from the card
-    expect(screen.queryByText("#PostgreSQL")).not.toBeInTheDocument();
+    // Tech tags are not shown on the compact cards (they remain in the detail modal)
+    expect(screen.queryByText("#Next.js")).not.toBeInTheDocument();
+    expect(screen.queryByText("#TypeScript")).not.toBeInTheDocument();
 
     // 'Ver proyecto' call-to-action
     const verProyectoButtons = screen.getAllByText("Ver proyecto");
