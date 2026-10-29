@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Check, Copy, Send, ArrowUpRight, MapPin } from "lucide-react";
+import { Mail, Check, Copy, Send, ArrowUpRight } from "lucide-react";
 import { DynamicIcon } from "./DynamicIcon";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "./ScrollReveal";
 

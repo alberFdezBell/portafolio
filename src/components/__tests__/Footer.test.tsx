@@ -52,7 +52,6 @@ describe("Footer component", () => {
     );
 
     expect(screen.getByText("dev@example.com")).toBeInTheDocument();
-    expect(screen.getByText(/Ubicación: Madrid, España/i)).toBeInTheDocument();
     expect(screen.getByText("GitHub")).toBeInTheDocument();
     expect(screen.getByText("LinkedIn")).toBeInTheDocument();
 
@@ -77,7 +76,7 @@ describe("Footer component", () => {
 
     expect(
       screen.getByText(
-        new RegExp(`Portafolio Autónomo © ${currentYear} Alberto Fernández Bellido`, "i")
+        new RegExp(`Portafolio © ${currentYear} Alberto Fernández Bellido`, "i")
       )
     ).toBeInTheDocument();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, ArrowRight } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { KnowledgeCategoryItem } from "./KnowledgeSection";
 
@@ -10,6 +10,7 @@ interface KnowledgeDetailViewProps {
   onClose: () => void;
   backLabel?: string;
   onOpenAllCategories?: () => void;
+  onOpenAllKnowledge?: () => void;
 }
 
 export function KnowledgeDetailView({
@@ -17,8 +18,10 @@ export function KnowledgeDetailView({
   onClose,
   backLabel = "Volver",
   onOpenAllCategories,
+  onOpenAllKnowledge,
 }: KnowledgeDetailViewProps) {
   const [canClose, setCanClose] = useState(false);
+  const handleOpenAll = onOpenAllKnowledge || onOpenAllCategories;
 
   useEffect(() => {
     // Prevent accidental clicks on the back button during entry slide
@@ -103,13 +106,20 @@ export function KnowledgeDetailView({
               <span>{backLabel}</span>
             </button>
 
-            {onOpenAllCategories && (
+            {handleOpenAll && (
               <button
                 type="button"
-                onClick={onOpenAllCategories}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-sm font-mono transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                onClick={handleOpenAll}
+                className="group inline-flex items-center gap-2 text-sm font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
               >
-                <span>Ver todas las categorías</span>
+                <span className="group-hover:underline underline-offset-4 decoration-emerald-400">
+                  Ver todos los conocimientos
+                </span>
+                <ArrowRight
+                  size={16}
+                  className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"
+                  aria-hidden="true"
+                />
               </button>
             )}
           </div>
@@ -118,4 +128,3 @@ export function KnowledgeDetailView({
     </div>
   );
 }
-

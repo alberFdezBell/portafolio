@@ -60,9 +60,6 @@ export function KnowledgeSection({
                     {cat.name}
                   </span>
                   <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
-                    <span className="text-xs font-mono hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">
-                      Abrir
-                    </span>
                     <ChevronRight
                       size={20}
                       className="group-hover:translate-x-1 transition-transform"

@@ -60,17 +60,11 @@ export function KnowledgeCategoryMenuView({
       <div className="flex-1 h-full overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
           {/* Cabecera */}
-          <div className="space-y-4 pb-8 border-b border-white/10">
+          <div className="space-y-4 pb-8">
             <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Conocimientos</span>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-              Categorías
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-base font-mono">
-              Selecciona una categoría para explorar sus notas técnicas y documentación.
-            </p>
           </div>
 
           {/* Menú de botones de categorías */}
@@ -87,9 +81,6 @@ export function KnowledgeCategoryMenuView({
                     {cat.name}
                   </span>
                   <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
-                    <span className="text-xs font-mono hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">
-                      Abrir
-                    </span>
                     <ChevronRight
                       size={20}
                       className="group-hover:translate-x-1 transition-transform"
