@@ -95,8 +95,18 @@ export function Footer({
 
               {location && (
                 <div className="flex items-center gap-2 text-xs font-mono text-slate-400 pt-1">
-                  <MapPin size={13} className="text-emerald-400" />
-                  <span>Ubicación: {location}</span>
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center shrink-0">
+                    <img
+                      src="/afb.webp"
+                      alt="Alberto Fernández Bellido"
+                      width={24}
+                      height={24}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-slate-300">
+                    Portafolio &copy; {year} Alberto Fernández Bellido
+                  </span>
                 </div>
               )}
             </div>
@@ -137,24 +147,6 @@ export function Footer({
               </StaggerContainer>
             ) : null}
           </ScrollReveal>
-        </div>
-
-        {/* Bottom copyright row with divider */}
-        <div className="mt-16 sm:mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center shrink-0">
-              <img
-                src="/afb.webp"
-                alt="Alberto Fernández Bellido"
-                width={24}
-                height={24}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="text-slate-300">
-              Portafolio Autónomo &copy; {year} Alberto Fernández Bellido
-            </span>
-          </div>
         </div>
       </div>
     </footer>
