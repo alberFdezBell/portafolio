@@ -308,7 +308,7 @@ export function PortfolioShell({
         className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
           isKnowledgeMenuOpen && !isKnowledgeDetailOpen
             ? "translate-x-0"
-            : isKnowledgeDetailOpen && knowledgeReturnTarget === "menu"
+            : isKnowledgeDetailOpen
             ? "-translate-x-full pointer-events-none"
             : "translate-x-full pointer-events-none"
         }`}
@@ -331,12 +331,8 @@ export function PortfolioShell({
           <KnowledgeDetailView
             category={selectedKnowledgeCategory}
             onClose={handleCloseKnowledgeDetail}
-            backLabel={
-              knowledgeReturnTarget === "main"
-                ? "Volver a inicio"
-                : "Volver a categorías"
-            }
             onOpenAllCategories={handleSwitchToAllCategories}
+            onOpenAllKnowledge={handleSwitchToAllCategories}
           />
         )}
       </div>

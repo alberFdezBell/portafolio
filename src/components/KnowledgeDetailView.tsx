@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, BookOpen, ArrowRight } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { KnowledgeCategoryItem } from "./KnowledgeSection";
 
@@ -16,7 +16,6 @@ interface KnowledgeDetailViewProps {
 export function KnowledgeDetailView({
   category,
   onClose,
-  backLabel = "Volver",
   onOpenAllCategories,
   onOpenAllKnowledge,
 }: KnowledgeDetailViewProps) {
@@ -95,31 +94,22 @@ export function KnowledgeDetailView({
             )}
           </div>
 
-          {/* Navegación al pie del artículo */}
-          <div className="pt-10 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={handleSafeClose}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-sm font-mono text-slate-300 hover:text-white transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-            >
-              <ArrowLeft size={16} />
-              <span>{backLabel}</span>
-            </button>
-
+          {/* Navegación al pie del artículo: enlace hacia la izquierda para ver todos los conocimientos */}
+          <div className="pt-10 border-t border-white/10 flex items-center justify-start">
             {handleOpenAll && (
               <button
                 type="button"
                 onClick={handleOpenAll}
-                className="group inline-flex items-center gap-2 text-sm font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
+                className="group inline-flex items-center gap-2.5 text-sm sm:text-base font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
               >
+                <ArrowLeft
+                  size={16}
+                  className="text-emerald-400 group-hover:-translate-x-1.5 transition-transform"
+                  aria-hidden="true"
+                />
                 <span className="group-hover:underline underline-offset-4 decoration-emerald-400">
                   Ver todos los conocimientos
                 </span>
-                <ArrowRight
-                  size={16}
-                  className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"
-                  aria-hidden="true"
-                />
               </button>
             )}
           </div>
