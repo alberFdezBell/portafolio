@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Shield,
@@ -25,6 +25,9 @@ import {
   X,
   Video,
   Image as ImageIcon,
+  Download,
+  UploadCloud,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import { IconPickerModal } from "@/components/IconPickerModal";
@@ -58,6 +61,11 @@ export default function AdminDashboardPage() {
   const [projectLinkTarget, setProjectLinkTarget] = useState<{ projectIdx: number; linkIdx: number } | null>(null);
   const [newTechInputs, setNewTechInputs] = useState<Record<string | number, string>>({});
   const [markdownPreviews, setMarkdownPreviews] = useState<Record<string | number, boolean>>({});
+
+  // Backup & Migration state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Notification helper
   const notify = (text: string, type: "success" | "error" = "success") => {
@@ -130,6 +138,90 @@ export default function AdminDashboardPage() {
     await fetch("/api/admin/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
+  };
+
+  // Export JSON (All portfolio data for migration)
+  const handleExportJson = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/admin/backup");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Error al exportar los datos");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().split("T")[0];
+      a.download = `portfolio-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      notify("Datos exportados en JSON con éxito.");
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : "Error exportando JSON", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Import JSON (Restore/migrate all portfolio data)
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      notify("Por favor selecciona un archivo .json válido", "error");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Deseas importar el archivo "${file.name}"?\n\n` +
+      `¡ATENCIÓN! Esta acción reemplazará la información actual (perfil, proyectos, experiencias, formación y redes) con los datos del archivo JSON.\n\n` +
+      `Haz clic en Aceptar para proceder con la migración.`
+    );
+    if (!confirmed) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error("El archivo no contiene un formato JSON válido");
+      }
+
+      const res = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Error al procesar la importación");
+      }
+
+      const counts = resData.counts;
+      let summary = "Datos importados con éxito.";
+      if (counts) {
+        summary = `Migración completada: ${counts.projects || 0} proyectos, ${counts.experiences || 0} experiencias, ${counts.education || 0} formación.`;
+      }
+      notify(summary, "success");
+      await fetchAllData();
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : "Error al importar el archivo JSON", "error");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   // Handle Photo Upload
@@ -511,7 +603,42 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Input oculto para importación de JSON */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportFile}
+            accept=".json,application/json"
+            className="hidden"
+          />
+
+          {/* Botón Exportar JSON */}
+          <button
+            type="button"
+            onClick={handleExportJson}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-xs font-mono text-slate-300 hover:text-emerald-300 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            title="Descargar todos los datos en un archivo JSON"
+          >
+            <Download size={13} className={exporting ? "animate-bounce text-emerald-400" : "text-emerald-400"} />
+            <span className="hidden sm:inline">{exporting ? "Exportando..." : "Exportar JSON"}</span>
+            <span className="sm:hidden">Exportar</span>
+          </button>
+
+          {/* Botón Importar JSON */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 hover:text-emerald-200 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            title="Cargar archivo JSON para restaurar o migrar todos los datos"
+          >
+            <UploadCloud size={13} className={importing ? "animate-pulse" : ""} />
+            <span className="hidden sm:inline">{importing ? "Importando..." : "Importar JSON"}</span>
+            <span className="sm:hidden">Importar</span>
+          </button>
+
           <Link
             href="/"
             target="_blank"
@@ -2135,6 +2262,81 @@ Explicación detallada del proyecto, decisiones técnicas y soluciones implement
               ) : (
                 <div className="text-xs font-mono text-slate-400">Cargando datos de 2FA...</div>
               )}
+            </div>
+
+            {/* SECCIÓN MIGRACIÓN Y COPIA DE SEGURIDAD */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-6 shadow-xl">
+              <div className="pb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Database size={20} className="text-emerald-400" />
+                    <span>Migración & Copias de Seguridad (JSON)</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 font-mono mt-1">
+                    Exporta o importa el estado completo del portafolio para migrar entre servidores, Docker, Portainer o realizar backups.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
+                    {projects.length} proyectos
+                  </span>
+                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
+                    {experiences.length} exp.
+                  </span>
+                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
+                    {education.length} form.
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Opción Exportar */}
+                <div className="p-5 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                      <Download size={16} className="text-emerald-400" />
+                      <span>Exportar Portafolio Completo</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                      Genera un archivo JSON con tu perfil, historia personal, experiencias, proyectos (con multimedia, enlaces y Markdown), formación e iconos.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExportJson}
+                    disabled={exporting}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-emerald-300 text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Download size={14} className={exporting ? "animate-bounce" : ""} />
+                    <span>{exporting ? "Generando JSON..." : "Descargar Backup JSON"}</span>
+                  </button>
+                </div>
+
+                {/* Opción Importar */}
+                <div className="p-5 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                      <UploadCloud size={16} className="text-emerald-400" />
+                      <span>Importar / Restaurar Portafolio</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                      Carga un archivo JSON previamente exportado. La base de datos SQLite se actualizará atómicamente con los nuevos datos.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={importing}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-mono font-bold transition-all shadow-sm shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    <UploadCloud size={14} className={importing ? "animate-pulse" : ""} />
+                    <span>{importing ? "Importando y migrando..." : "Seleccionar Archivo JSON"}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

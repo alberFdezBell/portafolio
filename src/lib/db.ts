@@ -16,7 +16,6 @@ const dbPath = process.env.DATABASE_PATH || path.join(dataDir, "portfolio.db");
 
 // Singleton SQLite instance stored on globalThis to survive Next.js HMR in development
 declare global {
-  // eslint-disable-next-line no-var
   var __portfolio_db: Database.Database | undefined;
 }
 
