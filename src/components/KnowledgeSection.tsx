@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ArrowRight, Layers } from "lucide-react";
+import { ChevronRight, ArrowRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 export interface KnowledgeCategoryItem {
@@ -37,23 +37,17 @@ export function KnowledgeSection({
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col items-start mb-12">
-            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
+          <div className="flex flex-col items-start mb-6">
+            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Conocimientos</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-              Conocimientos
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-2xl font-mono mt-3">
-              Base de conocimientos técnicos, patrones de arquitectura, contenedores y decisiones de ingeniería.
-            </p>
           </div>
         </ScrollReveal>
 
         {/* 3 Featured Categories (exact same card buttons as in the Categories Menu) */}
         {displayCategories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 pt-2">
+          <div className="grid grid-cols-1 gap-4">
             {displayCategories.map((cat, idx) => (
               <ScrollReveal key={cat.id} delay={0.05 * (idx + 1)} yOffset={15}>
                 <button
@@ -84,23 +78,22 @@ export function KnowledgeSection({
           </div>
         )}
 
-        {/* Button to explore all knowledge categories */}
+        {/* Button to explore all knowledge categories: minimal text link with animated arrow */}
         <ScrollReveal delay={0.22} yOffset={15}>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex justify-center">
             <button
               type="button"
               onClick={onOpenAllKnowledge}
               aria-label="Ver todos los conocimientos"
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl border border-white/10 bg-slate-900/70 hover:bg-slate-800 text-white hover:text-emerald-300 hover:border-emerald-500/40 font-mono text-xs sm:text-sm font-semibold transition-all shadow-lg active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 group"
+              className="group inline-flex items-center gap-2 text-sm sm:text-base font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
             >
-              <Layers size={16} className="text-emerald-400" />
-              <span>Ver todos los conocimientos</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400 group-hover:text-emerald-300">
-                {categories.length}
+              <span className="group-hover:underline underline-offset-4 decoration-emerald-400">
+                Ver todos los conocimientos
               </span>
               <ArrowRight
-                size={15}
-                className="text-emerald-400 group-hover:translate-x-1 transition-transform ml-0.5"
+                size={16}
+                className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"
+                aria-hidden="true"
               />
             </button>
           </div>

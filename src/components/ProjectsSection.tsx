@@ -91,15 +91,12 @@ export function ProjectsSection({ projects, onSelectProject }: ProjectsSectionPr
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase mb-3 flex items-center gap-2">
+              <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
                 <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
                 <span>03 / Proyectos</span>
               </div>
-              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-                Sistemas desplegados
-              </h2>
             </div>
             <span className="font-mono text-xs text-slate-500 pb-1">
               [ {projects.length} sistemas documentados ]
