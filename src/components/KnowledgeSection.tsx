@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ArrowRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 export interface KnowledgeCategoryItem {
@@ -16,19 +16,12 @@ export interface KnowledgeCategoryItem {
 interface KnowledgeSectionProps {
   categories: KnowledgeCategoryItem[];
   onSelectCategory: (category: KnowledgeCategoryItem) => void;
-  onOpenAllKnowledge: () => void;
 }
 
 export function KnowledgeSection({
   categories = [],
   onSelectCategory,
-  onOpenAllKnowledge,
 }: KnowledgeSectionProps) {
-  // Select up to 3 featured categories defined in admin; fallback to first 3 if none marked
-  const featuredList = categories.filter((c) => c.featured === 1);
-  const displayCategories =
-    featuredList.length > 0 ? featuredList.slice(0, 3) : categories.slice(0, 3);
-
   return (
     <section
       id="conocimientos"
@@ -45,10 +38,10 @@ export function KnowledgeSection({
           </div>
         </ScrollReveal>
 
-        {/* 3 Featured Categories (exact same card buttons as in the Categories Menu) */}
-        {displayCategories.length > 0 ? (
+        {/* All Knowledge Categories / Articles */}
+        {categories.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {displayCategories.map((cat, idx) => (
+            {categories.map((cat, idx) => (
               <ScrollReveal key={cat.id} delay={0.05 * (idx + 1)} yOffset={15}>
                 <button
                   type="button"
@@ -74,27 +67,6 @@ export function KnowledgeSection({
             No hay categorías de conocimientos registradas actualmente.
           </div>
         )}
-
-        {/* Button to explore all knowledge categories: minimal text link with animated arrow */}
-        <ScrollReveal delay={0.22} yOffset={15}>
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={onOpenAllKnowledge}
-              aria-label="Ver todos los conocimientos"
-              className="group inline-flex items-center gap-2 text-sm sm:text-base font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
-            >
-              <span className="group-hover:underline underline-offset-4 decoration-emerald-400">
-                Ver todos los conocimientos
-              </span>
-              <ArrowRight
-                size={16}
-                className="text-emerald-400 group-hover:translate-x-1.5 transition-transform"
-                aria-hidden="true"
-              />
-            </button>
-          </div>
-        </ScrollReveal>
       </div>
     </section>
   );

@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import { KnowledgeSection, KnowledgeCategoryItem } from "../KnowledgeSection";
-import { KnowledgeCategoryMenuView } from "../KnowledgeCategoryMenuView";
 import { KnowledgeDetailView } from "../KnowledgeDetailView";
 
 const mockCategories: KnowledgeCategoryItem[] = [
@@ -43,27 +42,27 @@ const mockCategories: KnowledgeCategoryItem[] = [
 
 describe("Knowledge Components", () => {
   describe("KnowledgeSection", () => {
-    it("renders section 05, the 3 featured categories and the 'Ver todos los conocimientos' button", () => {
+    it("renders section 05 and all categories without the 'Ver todos los conocimientos' button", () => {
       const handleSelect = vi.fn();
-      const handleOpenAll = vi.fn();
 
       render(
         <KnowledgeSection
           categories={mockCategories}
           onSelectCategory={handleSelect}
-          onOpenAllKnowledge={handleOpenAll}
         />
       );
 
       // Section title
       expect(screen.getByText("05 / Conocimientos")).toBeInTheDocument();
 
-      // The 3 featured categories are rendered as buttons
+      // All categories are rendered as buttons on main page
       expect(screen.getByText("Arquitectura Cloud & Docker")).toBeInTheDocument();
       expect(screen.getByText("Frontend & Rendimiento")).toBeInTheDocument();
       expect(screen.getByText("Seguridad & 2FA")).toBeInTheDocument();
-      // Category 4 (not featured) should not be on main page
-      expect(screen.queryByText("Bases de Datos & SQLite")).not.toBeInTheDocument();
+      expect(screen.getByText("Bases de Datos & SQLite")).toBeInTheDocument();
+
+      // "Ver todos los conocimientos" button is no longer present
+      expect(screen.queryByText(/ver todos los conocimientos/i)).not.toBeInTheDocument();
 
       // Clicking a category calls onSelectCategory
       const card = screen.getByRole("button", {
@@ -71,40 +70,11 @@ describe("Knowledge Components", () => {
       });
       fireEvent.click(card);
       expect(handleSelect).toHaveBeenCalledWith(mockCategories[0]);
-
-      // Button "Ver todos los conocimientos" calls onOpenAllKnowledge
-      const allButton = screen.getByRole("button", {
-        name: /ver todos los conocimientos/i,
-      });
-      fireEvent.click(allButton);
-      expect(handleOpenAll).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe("KnowledgeCategoryMenuView", () => {
-    it("renders categories as interactive buttons and selects one", () => {
-      const handleSelect = vi.fn();
-      const handleClose = vi.fn();
-
-      render(
-        <KnowledgeCategoryMenuView
-          categories={mockCategories}
-          onSelectCategory={handleSelect}
-          onClose={handleClose}
-        />
-      );
-
-      expect(screen.getByText("Arquitectura Cloud & Docker")).toBeInTheDocument();
-      expect(screen.getByText("Frontend & Rendimiento")).toBeInTheDocument();
-      expect(screen.getByText("Bases de Datos & SQLite")).toBeInTheDocument();
-
-      fireEvent.click(screen.getByText("Arquitectura Cloud & Docker"));
-      expect(handleSelect).toHaveBeenCalledWith(mockCategories[0]);
     });
   });
 
   describe("KnowledgeDetailView", () => {
-    it("renders category title and markdown content", () => {
+    it("renders category title and markdown content without 'Ver todos los conocimientos' button", () => {
       const handleClose = vi.fn();
 
       render(
@@ -117,6 +87,9 @@ describe("Knowledge Components", () => {
       expect(screen.getByRole("heading", { level: 1, name: "Arquitectura Cloud & Docker" })).toBeInTheDocument();
       expect(screen.getByText("Guía Docker")).toBeInTheDocument();
       expect(screen.getByText(/Notas sobre microservicios/i)).toBeInTheDocument();
+
+      // Bottom 'Ver todos los conocimientos' button is not present
+      expect(screen.queryByText(/ver todos los conocimientos/i)).not.toBeInTheDocument();
     });
   });
 });

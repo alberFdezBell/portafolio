@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { KnowledgeCategoryItem } from "./KnowledgeSection";
 
@@ -9,18 +8,13 @@ interface KnowledgeDetailViewProps {
   category: KnowledgeCategoryItem;
   onClose: () => void;
   backLabel?: string;
-  onOpenAllCategories?: () => void;
-  onOpenAllKnowledge?: () => void;
 }
 
 export function KnowledgeDetailView({
   category,
   onClose,
-  onOpenAllCategories,
-  onOpenAllKnowledge,
 }: KnowledgeDetailViewProps) {
   const [canClose, setCanClose] = useState(false);
-  const handleOpenAll = onOpenAllKnowledge || onOpenAllCategories;
 
   useEffect(() => {
     // Prevent accidental clicks on the back button during entry slide
@@ -78,7 +72,7 @@ export function KnowledgeDetailView({
         </div>
 
         {/* Contenido .md centrado en el medio */}
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-12 space-y-10">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-16 space-y-10">
           {/* Cuerpo Markdown */}
           <div className="min-h-[300px] text-slate-200">
             {category.content && category.content.trim().length > 0 ? (
@@ -87,26 +81,6 @@ export function KnowledgeDetailView({
               <div className="rounded-xl border border-dashed border-white/10 bg-slate-900/20 p-10 text-center text-slate-400 font-mono text-sm">
                 No hay contenido disponible para esta categoría por el momento.
               </div>
-            )}
-          </div>
-
-          {/* Navegación al pie del artículo: enlace hacia la izquierda para ver todos los conocimientos */}
-          <div className="pt-8 border-t border-white/10 flex items-center justify-start">
-            {handleOpenAll && (
-              <button
-                type="button"
-                onClick={handleOpenAll}
-                className="group inline-flex items-center gap-2.5 text-sm sm:text-base font-mono text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400/60 py-2 px-1"
-              >
-                <ArrowLeft
-                  size={16}
-                  className="text-emerald-400 group-hover:-translate-x-1.5 transition-transform"
-                  aria-hidden="true"
-                />
-                <span className="group-hover:underline underline-offset-4 decoration-emerald-400">
-                  Ver todos los conocimientos
-                </span>
-              </button>
             )}
           </div>
         </div>

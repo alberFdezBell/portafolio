@@ -8,7 +8,6 @@ import { ExperienceSection, ExperienceItem } from "./ExperienceSection";
 import { ProjectsSection, ProjectItem } from "./ProjectsSection";
 import { EducationSection, EducationItem } from "./EducationSection";
 import { KnowledgeSection, KnowledgeCategoryItem } from "./KnowledgeSection";
-import { KnowledgeCategoryMenuView } from "./KnowledgeCategoryMenuView";
 import { KnowledgeDetailView } from "./KnowledgeDetailView";
 import { Footer, SocialLinkItem } from "./Footer";
 import { ProjectDetailView } from "./ProjectDetailView";
@@ -36,12 +35,10 @@ export function PortfolioShell({
   const projectCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProjectOpeningRef = useRef(false);
 
-  // Knowledge Menu & Detail state
-  const [isKnowledgeMenuOpen, setIsKnowledgeMenuOpen] = useState(false);
+  // Knowledge Detail state
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] =
     useState<KnowledgeCategoryItem | null>(null);
   const [isKnowledgeDetailOpen, setIsKnowledgeDetailOpen] = useState(false);
-  const [knowledgeReturnTarget, setKnowledgeReturnTarget] = useState<"main" | "menu">("menu");
   const knowledgeCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isKnowledgeOpeningRef = useRef(false);
 
@@ -95,8 +92,8 @@ export function PortfolioShell({
   };
 
   // --- KNOWLEDGE HANDLERS ---
-  const handleOpenKnowledgeMenu = () => {
-    if (isKnowledgeMenuOpen || isKnowledgeOpeningRef.current) return;
+  const handleSelectKnowledgeCategory = (cat: KnowledgeCategoryItem) => {
+    if (isKnowledgeDetailOpen || isKnowledgeOpeningRef.current) return;
     isKnowledgeOpeningRef.current = true;
 
     if (knowledgeCloseTimerRef.current) {
@@ -104,6 +101,8 @@ export function PortfolioShell({
       knowledgeCloseTimerRef.current = null;
     }
 
+    setSelectedKnowledgeCategory(cat);
+
     if (typeof document !== "undefined") {
       document.body.classList.add("scrollbar-hidden");
       document.body.style.overflow = "hidden";
@@ -111,7 +110,7 @@ export function PortfolioShell({
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setIsKnowledgeMenuOpen(true);
+        setIsKnowledgeDetailOpen(true);
         setTimeout(() => {
           isKnowledgeOpeningRef.current = false;
         }, 750);
@@ -119,84 +118,25 @@ export function PortfolioShell({
     });
   };
 
-  const handleCloseKnowledgeMenu = () => {
+  const handleCloseKnowledgeDetail = () => {
     if (isKnowledgeOpeningRef.current) return;
 
     if (knowledgeCloseTimerRef.current) {
       clearTimeout(knowledgeCloseTimerRef.current);
     }
 
-    setIsKnowledgeMenuOpen(false);
+    setIsKnowledgeDetailOpen(false);
 
     if (typeof document !== "undefined") {
       document.body.style.overflow = "";
     }
 
     knowledgeCloseTimerRef.current = setTimeout(() => {
+      setSelectedKnowledgeCategory(null);
       if (typeof document !== "undefined") {
         document.body.classList.remove("scrollbar-hidden");
       }
       knowledgeCloseTimerRef.current = null;
-    }, 750);
-  };
-
-  // Click on one of the 3 categories on the Main Page
-  const handleSelectKnowledgeCategoryFromMain = (cat: KnowledgeCategoryItem) => {
-    setKnowledgeReturnTarget("main");
-    setSelectedKnowledgeCategory(cat);
-
-    if (typeof document !== "undefined") {
-      document.body.classList.add("scrollbar-hidden");
-      document.body.style.overflow = "hidden";
-    }
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsKnowledgeDetailOpen(true);
-      });
-    });
-  };
-
-  // Click on a category from the Category Menu (Level 2)
-  const handleSelectKnowledgeCategoryFromMenu = (cat: KnowledgeCategoryItem) => {
-    setKnowledgeReturnTarget("menu");
-    setSelectedKnowledgeCategory(cat);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsKnowledgeDetailOpen(true);
-      });
-    });
-  };
-
-  const handleCloseKnowledgeDetail = () => {
-    setIsKnowledgeDetailOpen(false);
-
-    if (knowledgeReturnTarget === "main") {
-      if (typeof document !== "undefined") {
-        document.body.style.overflow = "";
-      }
-      setTimeout(() => {
-        if (typeof document !== "undefined") {
-          document.body.classList.remove("scrollbar-hidden");
-        }
-        setSelectedKnowledgeCategory(null);
-      }, 750);
-    } else {
-      setTimeout(() => {
-        if (!isKnowledgeDetailOpen) {
-          setSelectedKnowledgeCategory(null);
-        }
-      }, 750);
-    }
-  };
-
-  const handleSwitchToAllCategories = () => {
-    setKnowledgeReturnTarget("menu");
-    setIsKnowledgeDetailOpen(false);
-    setIsKnowledgeMenuOpen(true);
-    setTimeout(() => {
-      setSelectedKnowledgeCategory(null);
     }, 750);
   };
 
@@ -218,8 +158,6 @@ export function PortfolioShell({
       if (e.key === "Escape") {
         if (isKnowledgeDetailOpen) {
           handleCloseKnowledgeDetail();
-        } else if (isKnowledgeMenuOpen) {
-          handleCloseKnowledgeMenu();
         } else if (isDetailOpen) {
           handleCloseProject();
         }
@@ -227,10 +165,9 @@ export function PortfolioShell({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isKnowledgeDetailOpen, isKnowledgeMenuOpen, isDetailOpen, knowledgeReturnTarget]);
+  }, [isKnowledgeDetailOpen, isDetailOpen]);
 
-  const isAnyOverlayActive =
-    isDetailOpen || isKnowledgeMenuOpen || isKnowledgeDetailOpen;
+  const isAnyOverlayActive = isDetailOpen || isKnowledgeDetailOpen;
 
   return (
     <div className="relative min-h-screen bg-[#090d16] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden">
@@ -275,8 +212,7 @@ export function PortfolioShell({
 
           <KnowledgeSection
             categories={knowledgeCategories}
-            onSelectCategory={handleSelectKnowledgeCategoryFromMain}
-            onOpenAllKnowledge={handleOpenKnowledgeMenu}
+            onSelectCategory={handleSelectKnowledgeCategory}
           />
         </main>
 
@@ -302,25 +238,7 @@ export function PortfolioShell({
         )}
       </div>
 
-      {/* SCREEN 2 (Knowledge): Knowledge Category Menu Screen */}
-      <div
-        aria-hidden={!isKnowledgeMenuOpen}
-        className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
-          isKnowledgeMenuOpen && !isKnowledgeDetailOpen
-            ? "translate-x-0"
-            : isKnowledgeDetailOpen
-            ? "-translate-x-full pointer-events-none"
-            : "translate-x-full pointer-events-none"
-        }`}
-      >
-        <KnowledgeCategoryMenuView
-          categories={knowledgeCategories}
-          onSelectCategory={handleSelectKnowledgeCategoryFromMenu}
-          onClose={handleCloseKnowledgeMenu}
-        />
-      </div>
-
-      {/* SCREEN 3 (Knowledge): Knowledge Category Markdown / Blog Viewer */}
+      {/* SCREEN 2 (Knowledge): Knowledge Category Markdown / Blog Viewer */}
       <div
         aria-hidden={!isKnowledgeDetailOpen}
         className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
@@ -331,8 +249,6 @@ export function PortfolioShell({
           <KnowledgeDetailView
             category={selectedKnowledgeCategory}
             onClose={handleCloseKnowledgeDetail}
-            onOpenAllCategories={handleSwitchToAllCategories}
-            onOpenAllKnowledge={handleSwitchToAllCategories}
           />
         )}
       </div>
