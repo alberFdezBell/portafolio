@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { KnowledgeCategoryItem } from "./KnowledgeSection";
 
@@ -63,24 +63,17 @@ export function KnowledgeDetailView({
 
       {/* Visor de contenido Markdown / Blog */}
       <div className="flex-1 h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
-          {/* Cabecera del artículo */}
-          <div className="space-y-4 pb-8 border-b border-white/10">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-mono tracking-widest text-emerald-400 uppercase">
+        <div className="max-w-4xl px-6 sm:px-12 pt-8 sm:pt-10 pb-16 space-y-8 text-left">
+          {/* Cabecera del artículo: arriba a la izquierda */}
+          <div className="flex flex-col items-start gap-3 pb-6 border-b border-white/10">
+            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Conocimientos</span>
-              <span className="text-slate-600">/</span>
-              <span className="text-slate-400">Categoría</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight text-left">
               {category.name}
             </h1>
-
-            <div className="flex items-center gap-2 pt-1 font-mono text-xs text-slate-400">
-              <BookOpen size={14} className="text-emerald-400" />
-              <span>Notas técnicas & documentación</span>
-            </div>
           </div>
 
           {/* Cuerpo Markdown */}
