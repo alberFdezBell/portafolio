@@ -241,14 +241,23 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
               {project.title}
             </h1>
 
-            {/* Pills de estado y proyecto destacado debajo del título */}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            {/* Pills de estado, proyecto destacado y tecnologías a la derecha */}
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
               {renderStatusBadge(project.status)}
               {project.featured === 1 && (
                 <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
                   ★ Proyecto Destacado
                 </span>
               )}
+              {techList.map((tech, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-slate-900/60 font-mono text-xs text-slate-300 hover:border-emerald-500/30 hover:text-emerald-300 transition-colors"
+                >
+                  <span className="text-emerald-400">#</span>
+                  <span>{tech}</span>
+                </div>
+              ))}
             </div>
 
             {/* Enlaces con icono y nombre */}
@@ -274,7 +283,6 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
 
         {/* Contenido detallado del proyecto */}
         <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
-
           {/* Carrusel multimedia (fotos o videos) */}
           {mediaList.length > 0 && (
             <div className="space-y-3">
@@ -283,27 +291,6 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
                 <span>Galería Multimedia</span>
               </h3>
               <ProjectMediaCarousel media={mediaList} title={project.title} />
-            </div>
-          )}
-
-          {/* Stack & Tecnologías */}
-          {techList.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-xs font-mono tracking-wider uppercase text-emerald-400 flex items-center gap-2">
-                <span className="w-3 h-px bg-emerald-400" />
-                <span>Tecnologías & Arquitectura</span>
-              </h3>
-              <div className="flex flex-wrap gap-2.5">
-                {techList.map((tech, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-slate-900/60 font-mono text-xs text-slate-300 hover:border-emerald-500/30 hover:text-emerald-300 transition-colors"
-                  >
-                    <span className="text-emerald-400">#</span>
-                    <span>{tech}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
