@@ -63,19 +63,22 @@ export function KnowledgeDetailView({
 
       {/* Visor de contenido Markdown / Blog */}
       <div className="flex-1 h-full overflow-y-auto">
-        <div className="max-w-4xl px-6 sm:px-12 pt-8 sm:pt-10 pb-16 space-y-8 text-left">
-          {/* Cabecera del artículo: arriba a la izquierda */}
-          <div className="flex flex-col items-start gap-3 pb-6 border-b border-white/10">
+        {/* Cabecera del artículo: fijada arriba a la izquierda en todo el ancho superior */}
+        <div className="w-full px-6 sm:px-12 pt-8 sm:pt-10 pb-6 border-b border-white/10">
+          <div className="flex flex-col items-start gap-2">
             <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
               <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
               <span>05 / Conocimientos</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight text-left">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
               {category.name}
             </h1>
           </div>
+        </div>
 
+        {/* Contenido .md centrado en el medio */}
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10 sm:py-12 space-y-10">
           {/* Cuerpo Markdown */}
           <div className="min-h-[300px] text-slate-200">
             {category.content && category.content.trim().length > 0 ? (
@@ -88,7 +91,7 @@ export function KnowledgeDetailView({
           </div>
 
           {/* Navegación al pie del artículo: enlace hacia la izquierda para ver todos los conocimientos */}
-          <div className="pt-10 border-t border-white/10 flex items-center justify-start">
+          <div className="pt-8 border-t border-white/10 flex items-center justify-start">
             {handleOpenAll && (
               <button
                 type="button"
