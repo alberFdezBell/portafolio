@@ -13,6 +13,7 @@ const mockCategories: KnowledgeCategoryItem[] = [
     slug: "arquitectura-cloud-docker",
     content: "# Guía Docker\n\nNotas sobre microservicios y despliegues con Docker Compose.",
     order_num: 1,
+    featured: 1,
   },
   {
     id: 2,
@@ -20,26 +21,63 @@ const mockCategories: KnowledgeCategoryItem[] = [
     slug: "frontend-rendimiento",
     content: "# Rendimiento Web\n\nOptimización de Core Web Vitals.",
     order_num: 2,
+    featured: 1,
+  },
+  {
+    id: 3,
+    name: "Seguridad & 2FA",
+    slug: "seguridad-2fa",
+    content: "# Seguridad Web\n\nAutenticación TOTP y rate limiting.",
+    order_num: 3,
+    featured: 1,
+  },
+  {
+    id: 4,
+    name: "Bases de Datos & SQLite",
+    slug: "bases-de-datos",
+    content: "# SQLite\n\nModo WAL y rendimiento.",
+    order_num: 4,
+    featured: 0,
   },
 ];
 
 describe("Knowledge Components", () => {
   describe("KnowledgeSection", () => {
-    it("renders section 05 and category count badge", () => {
-      const handleOpen = vi.fn();
+    it("renders section 05, the 3 featured categories and the 'Ver todos los conocimientos' button", () => {
+      const handleSelect = vi.fn();
+      const handleOpenAll = vi.fn();
+
       render(
         <KnowledgeSection
           categories={mockCategories}
-          onOpenKnowledge={handleOpen}
+          onSelectCategory={handleSelect}
+          onOpenAllKnowledge={handleOpenAll}
         />
       );
 
+      // Section title
       expect(screen.getByText("05 / Conocimientos")).toBeInTheDocument();
-      expect(screen.getByText(/categorías documentadas/i)).toBeInTheDocument();
 
-      const button = screen.getByRole("button", { name: /explorar menú de categorías de conocimientos/i });
-      fireEvent.click(button);
-      expect(handleOpen).toHaveBeenCalledTimes(1);
+      // The 3 featured categories are rendered as buttons
+      expect(screen.getByText("Arquitectura Cloud & Docker")).toBeInTheDocument();
+      expect(screen.getByText("Frontend & Rendimiento")).toBeInTheDocument();
+      expect(screen.getByText("Seguridad & 2FA")).toBeInTheDocument();
+      // Category 4 (not featured) should not be on main page
+      expect(screen.queryByText("Bases de Datos & SQLite")).not.toBeInTheDocument();
+
+      // Clicking a category calls onSelectCategory
+      const card = screen.getByRole("button", {
+        name: /ver categoría de conocimiento: arquitectura cloud & docker/i,
+      });
+      fireEvent.click(card);
+      expect(handleSelect).toHaveBeenCalledWith(mockCategories[0]);
+
+      // Button "Ver todos los conocimientos" calls onOpenAllKnowledge
+      const allButton = screen.getByRole("button", {
+        name: /ver todos los conocimientos/i,
+      });
+      fireEvent.click(allButton);
+      expect(handleOpenAll).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -58,6 +96,7 @@ describe("Knowledge Components", () => {
 
       expect(screen.getByText("Arquitectura Cloud & Docker")).toBeInTheDocument();
       expect(screen.getByText("Frontend & Rendimiento")).toBeInTheDocument();
+      expect(screen.getByText("Bases de Datos & SQLite")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Arquitectura Cloud & Docker"));
       expect(handleSelect).toHaveBeenCalledWith(mockCategories[0]);

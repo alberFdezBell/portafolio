@@ -10,17 +10,25 @@ export interface KnowledgeCategoryItem {
   slug?: string;
   content: string;
   order_num?: number;
+  featured?: number;
 }
 
 interface KnowledgeSectionProps {
   categories: KnowledgeCategoryItem[];
-  onOpenKnowledge: () => void;
+  onSelectCategory: (category: KnowledgeCategoryItem) => void;
+  onOpenAllKnowledge: () => void;
 }
 
 export function KnowledgeSection({
   categories = [],
-  onOpenKnowledge,
+  onSelectCategory,
+  onOpenAllKnowledge,
 }: KnowledgeSectionProps) {
+  // Select up to 3 featured categories defined in admin; fallback to first 3 if none marked
+  const featuredList = categories.filter((c) => c.featured === 1);
+  const displayCategories =
+    featuredList.length > 0 ? featuredList.slice(0, 3) : categories.slice(0, 3);
+
   return (
     <section
       id="conocimientos"
@@ -43,79 +51,78 @@ export function KnowledgeSection({
           </div>
         </ScrollReveal>
 
-        {/* Hero Interactive Entry Card */}
-        <ScrollReveal delay={0.08} yOffset={20}>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={onOpenKnowledge}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onOpenKnowledge();
-              }
-            }}
-            aria-label="Explorar menú de categorías de conocimientos"
-            className="group relative p-7 sm:p-10 rounded-2xl border border-white/10 bg-slate-900/30 hover:bg-slate-900/60 hover:border-emerald-500/40 transition-all duration-300 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-emerald-500/50 select-none"
-          >
-            {/* Ambient subtle glow background */}
-            <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-emerald-500/[0.06] rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
+        {/* 3 Featured Categories Grid */}
+        {displayCategories.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+            {displayCategories.map((cat, idx) => (
+              <ScrollReveal key={cat.id} delay={0.06 * (idx + 1)} yOffset={20} className="h-full">
+                <button
+                  type="button"
+                  onClick={() => onSelectCategory(cat)}
+                  aria-label={`Ver categoría de conocimiento: ${cat.name}`}
+                  className="group w-full h-full p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-900/30 hover:bg-slate-900/70 hover:border-emerald-500/40 transition-all duration-300 text-left flex flex-col justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-sm relative overflow-hidden"
+                >
+                  {/* Subtle hover accent light */}
+                  <div className="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/[0.04] rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-              <div className="space-y-4 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-300">
-                  <BookOpen size={14} className="text-emerald-400" />
-                  <span>
-                    {categories.length}{" "}
-                    {categories.length === 1
-                      ? "categoría documentada"
-                      : "categorías documentadas"}
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
-                  Explorar Repositorio de Conocimientos
-                </h3>
-
-                <p className="text-slate-300/90 text-sm sm:text-base leading-relaxed font-normal">
-                  Accede al menú interactivo de categorías técnicas. Cada categoría incluye artículos en formato Markdown con diagramas, fragmentos de código e imágenes ilustrativas.
-                </p>
-
-                {/* Preview badges of available categories */}
-                {categories.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                    {categories.slice(0, 4).map((cat) => (
-                      <span
-                        key={cat.id}
-                        className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-slate-300 group-hover:border-emerald-500/20 transition-colors"
-                      >
-                        {cat.name}
+                  <div className="space-y-4 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <span className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                        <BookOpen size={16} />
                       </span>
-                    ))}
-                    {categories.length > 4 && (
-                      <span className="text-xs font-mono text-slate-500">
-                        +{categories.length - 4} más
+                      <span className="text-[11px] font-mono text-slate-500 group-hover:text-emerald-400 transition-colors">
+                        0{idx + 1}
                       </span>
-                    )}
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight line-clamp-2">
+                      {cat.name}
+                    </h3>
+
+                    <p className="text-slate-400 text-xs sm:text-sm font-mono line-clamp-3">
+                      Notas técnicas, patrones y documentación sobre {cat.name}.
+                    </p>
                   </div>
-                )}
-              </div>
 
-              <div className="flex items-center gap-3 self-start md:self-center shrink-0">
-                <span className="px-6 py-3.5 rounded-xl bg-emerald-500 text-black font-semibold text-xs sm:text-sm font-mono flex items-center gap-2.5 group-hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
-                  <Layers size={16} />
-                  <span>Ver Categorías</span>
-                  <ArrowRight
-                    size={16}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
-                </span>
-              </div>
-            </div>
+                  <div className="pt-6 mt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400 group-hover:text-emerald-300 transition-colors relative z-10">
+                    <span>Leer artículo</span>
+                    <ArrowRight
+                      size={14}
+                      className="group-hover:translate-x-1 transition-transform text-emerald-400"
+                    />
+                  </div>
+                </button>
+              </ScrollReveal>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-400 font-mono text-sm">
+            No hay categorías de conocimientos registradas actualmente.
+          </div>
+        )}
+
+        {/* Button to explore all knowledge categories */}
+        <ScrollReveal delay={0.24} yOffset={15}>
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={onOpenAllKnowledge}
+              aria-label="Ver todos los conocimientos"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl border border-white/10 bg-slate-900/70 hover:bg-slate-800 text-white hover:text-emerald-300 hover:border-emerald-500/40 font-mono text-xs sm:text-sm font-semibold transition-all shadow-lg active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 group"
+            >
+              <Layers size={16} className="text-emerald-400" />
+              <span>Ver todos los conocimientos</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400 group-hover:text-emerald-300">
+                {categories.length}
+              </span>
+              <ArrowRight
+                size={15}
+                className="text-emerald-400 group-hover:translate-x-1 transition-transform ml-0.5"
+              />
+            </button>
           </div>
         </ScrollReveal>
       </div>
     </section>
   );
 }
-

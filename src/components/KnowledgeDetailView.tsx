@@ -8,11 +8,15 @@ import { KnowledgeCategoryItem } from "./KnowledgeSection";
 interface KnowledgeDetailViewProps {
   category: KnowledgeCategoryItem;
   onClose: () => void;
+  backLabel?: string;
+  onOpenAllCategories?: () => void;
 }
 
 export function KnowledgeDetailView({
   category,
   onClose,
+  backLabel = "Volver",
+  onOpenAllCategories,
 }: KnowledgeDetailViewProps) {
   const [canClose, setCanClose] = useState(false);
 
@@ -89,15 +93,25 @@ export function KnowledgeDetailView({
           </div>
 
           {/* Navegación al pie del artículo */}
-          <div className="pt-10 border-t border-white/10 flex items-center justify-between">
+          <div className="pt-10 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
             <button
               type="button"
               onClick={handleSafeClose}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-sm font-mono text-slate-300 hover:text-white transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             >
               <ArrowLeft size={16} />
-              <span>Volver a categorías</span>
+              <span>{backLabel}</span>
             </button>
+
+            {onOpenAllCategories && (
+              <button
+                type="button"
+                onClick={onOpenAllCategories}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-sm font-mono transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              >
+                <span>Ver todas las categorías</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -31,14 +31,15 @@ export async function POST(req: NextRequest) {
 
   const result = db
     .prepare(`
-      INSERT INTO knowledge_categories (name, slug, content, order_num)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO knowledge_categories (name, slug, content, order_num, featured)
+      VALUES (?, ?, ?, ?, ?)
     `)
     .run(
       data.name || "Nueva Categoría",
       slug,
       data.content || "",
-      data.order_num || 0
+      data.order_num || 0,
+      data.featured ? 1 : 0
     );
 
   return NextResponse.json({ success: true, id: result.lastInsertRowid });
@@ -55,13 +56,19 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(data)) {
     const updateStmt = db.prepare(`
       UPDATE knowledge_categories
-      SET name = ?, content = ?, order_num = ?, updated_at = CURRENT_TIMESTAMP
+      SET name = ?, content = ?, order_num = ?, featured = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
 
     const transaction = db.transaction((items) => {
       for (const item of items) {
-        updateStmt.run(item.name, item.content || "", item.order_num || 0, item.id);
+        updateStmt.run(
+          item.name,
+          item.content || "",
+          item.order_num || 0,
+          item.featured ? 1 : 0,
+          item.id
+        );
       }
     });
 
@@ -76,9 +83,16 @@ export async function PUT(req: NextRequest) {
 
   db.prepare(`
     UPDATE knowledge_categories
-    SET name = ?, content = ?, order_num = ?, updated_at = CURRENT_TIMESTAMP
+    SET name = ?, slug = ?, content = ?, order_num = ?, featured = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(data.name, data.content || "", data.order_num || 0, data.id);
+  `).run(
+    data.name,
+    data.slug || null,
+    data.content || "",
+    data.order_num || 0,
+    data.featured ? 1 : 0,
+    data.id
+  );
 
   return NextResponse.json({ success: true });
 }

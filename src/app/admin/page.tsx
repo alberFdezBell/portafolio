@@ -534,6 +534,7 @@ export default function AdminDashboardPage() {
 
   // Knowledge Categories Mutations
   const handleAddKnowledgeCategory = () => {
+    const featuredCount = knowledgeCategories.filter((c) => c.featured === 1).length;
     setKnowledgeCategories([
       ...knowledgeCategories,
       {
@@ -542,9 +543,46 @@ export default function AdminDashboardPage() {
         slug: "nueva-categoria-" + Date.now(),
         content: "# Nueva Categoría\n\nEscribe aquí tus notas técnicas en formato Markdown...\n",
         order_num: knowledgeCategories.length + 1,
+        featured: featuredCount < 3 ? 1 : 0,
         isNew: true,
       },
     ]);
+  };
+
+  const handleToggleFeaturedKnowledgeCategory = async (categoryIdx: number) => {
+    const target = knowledgeCategories[categoryIdx];
+    const isCurrentlyFeatured = target.featured === 1;
+
+    // If enabling, ensure not exceeding 3
+    if (!isCurrentlyFeatured) {
+      const currentFeaturedCount = knowledgeCategories.filter((c) => c.featured === 1).length;
+      if (currentFeaturedCount >= 3) {
+        notify("Máximo 3 categorías pueden estar destacadas en portada. Desmarca una primero.", "error");
+        return;
+      }
+    }
+
+    const updated = [...knowledgeCategories];
+    const nextFeatured = isCurrentlyFeatured ? 0 : 1;
+    updated[categoryIdx] = { ...target, featured: nextFeatured };
+    setKnowledgeCategories(updated);
+
+    if (!target.isNew && typeof target.id === "number") {
+      try {
+        await fetch("/api/admin/knowledge", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...target, featured: nextFeatured }),
+        });
+        notify(
+          nextFeatured === 1
+            ? "Categoría destacada en portada (05 / Conocimientos)."
+            : "Categoría retirada de la portada."
+        );
+      } catch {
+        notify("Error al actualizar estado en portada", "error");
+      }
+    }
   };
 
   const handleSaveKnowledgeCategory = async (item: any) => {
@@ -2193,6 +2231,22 @@ Explicación detallada del proyecto, decisiones técnicas y soluciones implement
               </button>
             </div>
 
+            {/* Featured categories in main page status banner */}
+            <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+              <div className="flex items-center gap-2 text-amber-300">
+                <Star size={16} className="text-amber-400 fill-amber-400 shrink-0" />
+                <span>
+                  <strong>
+                    {knowledgeCategories.filter((c) => c.featured === 1).length} de 3
+                  </strong>{" "}
+                  categorías seleccionadas para mostrar en la pantalla principal (05 / Conocimientos).
+                </span>
+              </div>
+              <span className="text-slate-400 text-[11px]">
+                Usa el botón «Mostrar en Portada» en cada tarjeta para elegir las 3 destacadas.
+              </span>
+            </div>
+
             {knowledgeCategories.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d1322] p-12 text-center space-y-3">
                 <BookOpen size={36} className="mx-auto text-slate-600" />
@@ -2249,7 +2303,31 @@ Explicación detallada del proyecto, decisiones técnicas y soluciones implement
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Toggle Featured on Main Page button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeaturedKnowledgeCategory(idx)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                              cat.featured === 1
+                                ? "bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold"
+                                : "bg-slate-900 border-white/10 text-slate-400 hover:text-white"
+                            }`}
+                            title={
+                              cat.featured === 1
+                                ? "Esta categoría se muestra en la sección 05 de la pantalla principal"
+                                : "Marcar para mostrar en la pantalla principal (máx 3)"
+                            }
+                          >
+                            <Star
+                              size={13}
+                              className={
+                                cat.featured === 1 ? "text-amber-400 fill-amber-400" : "text-slate-500"
+                              }
+                            />
+                            <span>{cat.featured === 1 ? "En Portada (05)" : "Mostrar en Portada"}</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleDeleteKnowledgeCategory(cat.id)}

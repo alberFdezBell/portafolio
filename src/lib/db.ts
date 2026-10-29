@@ -123,6 +123,7 @@ function initSchema(database: Database.Database) {
       slug TEXT,
       content TEXT DEFAULT '',
       order_num INTEGER DEFAULT 0,
+      featured INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -146,6 +147,18 @@ function initSchema(database: Database.Database) {
     }
   } catch (e) {
     console.error("Error migrating projects table:", e);
+  }
+
+  // Migrate knowledge_categories table if featured column is missing
+  try {
+    const knowCols = database.prepare("PRAGMA table_info(knowledge_categories)").all() as Array<{ name: string }>;
+    const knowNames = knowCols.map((c) => c.name);
+    if (!knowNames.includes("featured")) {
+      database.prepare("ALTER TABLE knowledge_categories ADD COLUMN featured INTEGER DEFAULT 0").run();
+      database.prepare("UPDATE knowledge_categories SET featured = 1 WHERE id IN (SELECT id FROM knowledge_categories ORDER BY order_num ASC, id ASC LIMIT 3)").run();
+    }
+  } catch (e) {
+    console.error("Error migrating knowledge_categories table:", e);
   }
 
   // Seed default initial profile if none exists
@@ -261,8 +274,8 @@ function initSchema(database: Database.Database) {
     const knowledgeCount = database.prepare("SELECT COUNT(*) as count FROM knowledge_categories").get() as { count: number };
     if (knowledgeCount.count === 0) {
       const insertCategory = database.prepare(`
-        INSERT INTO knowledge_categories (name, slug, content, order_num)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO knowledge_categories (name, slug, content, order_num, featured)
+        VALUES (?, ?, ?, ?, ?)
       `);
 
       insertCategory.run(
@@ -287,6 +300,7 @@ services:
 \`\`\`
 
 > La simplicidad operativa es el pilar de la fiabilidad en producción.`,
+        1,
         1
       );
 
@@ -301,7 +315,8 @@ Estrategias para optimizar Core Web Vitals, tiempos de carga y fluidez de render
 - **Server-Side Rendering (SSR)** para primer byte rápido (TTFB).
 - **Sub-división de paquetes** y carga diferida de componentes pesados.
 - **Optimización de fuentes e imágenes** en formatos modernos como WebP/AVIF.`,
-        2
+        2,
+        1
       );
 
       insertCategory.run(
@@ -315,7 +330,8 @@ Diseño de sistemas defensivos multicapa y autenticación de doble factor.
 1. **TOTP (RFC 6238)**: Códigos de un solo uso basados en tiempo.
 2. **Rate Limiting**: Protección activa contra ataques de fuerza bruta en endpoints de login.
 3. **Cookies Seguras**: Atributos \`HttpOnly\`, \`SameSite=Strict\` y \`Secure\`.`,
-        3
+        3,
+        1
       );
     }
   } catch (err) {

@@ -41,6 +41,7 @@ export function PortfolioShell({
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] =
     useState<KnowledgeCategoryItem | null>(null);
   const [isKnowledgeDetailOpen, setIsKnowledgeDetailOpen] = useState(false);
+  const [knowledgeReturnTarget, setKnowledgeReturnTarget] = useState<"main" | "menu">("menu");
   const knowledgeCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isKnowledgeOpeningRef = useRef(false);
 
@@ -139,8 +140,28 @@ export function PortfolioShell({
     }, 750);
   };
 
-  const handleSelectKnowledgeCategory = (cat: KnowledgeCategoryItem) => {
+  // Click on one of the 3 categories on the Main Page
+  const handleSelectKnowledgeCategoryFromMain = (cat: KnowledgeCategoryItem) => {
+    setKnowledgeReturnTarget("main");
     setSelectedKnowledgeCategory(cat);
+
+    if (typeof document !== "undefined") {
+      document.body.classList.add("scrollbar-hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsKnowledgeDetailOpen(true);
+      });
+    });
+  };
+
+  // Click on a category from the Category Menu (Level 2)
+  const handleSelectKnowledgeCategoryFromMenu = (cat: KnowledgeCategoryItem) => {
+    setKnowledgeReturnTarget("menu");
+    setSelectedKnowledgeCategory(cat);
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsKnowledgeDetailOpen(true);
@@ -150,11 +171,32 @@ export function PortfolioShell({
 
   const handleCloseKnowledgeDetail = () => {
     setIsKnowledgeDetailOpen(false);
-    // Keep selectedKnowledgeCategory until transition completes to avoid flash of empty
-    setTimeout(() => {
-      if (!isKnowledgeDetailOpen) {
-        setSelectedKnowledgeCategory(null);
+
+    if (knowledgeReturnTarget === "main") {
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = "";
       }
+      setTimeout(() => {
+        if (typeof document !== "undefined") {
+          document.body.classList.remove("scrollbar-hidden");
+        }
+        setSelectedKnowledgeCategory(null);
+      }, 750);
+    } else {
+      setTimeout(() => {
+        if (!isKnowledgeDetailOpen) {
+          setSelectedKnowledgeCategory(null);
+        }
+      }, 750);
+    }
+  };
+
+  const handleSwitchToAllCategories = () => {
+    setKnowledgeReturnTarget("menu");
+    setIsKnowledgeDetailOpen(false);
+    setIsKnowledgeMenuOpen(true);
+    setTimeout(() => {
+      setSelectedKnowledgeCategory(null);
     }, 750);
   };
 
@@ -185,7 +227,7 @@ export function PortfolioShell({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isKnowledgeDetailOpen, isKnowledgeMenuOpen, isDetailOpen]);
+  }, [isKnowledgeDetailOpen, isKnowledgeMenuOpen, isDetailOpen, knowledgeReturnTarget]);
 
   const isAnyOverlayActive =
     isDetailOpen || isKnowledgeMenuOpen || isKnowledgeDetailOpen;
@@ -233,7 +275,8 @@ export function PortfolioShell({
 
           <KnowledgeSection
             categories={knowledgeCategories}
-            onOpenKnowledge={handleOpenKnowledgeMenu}
+            onSelectCategory={handleSelectKnowledgeCategoryFromMain}
+            onOpenAllKnowledge={handleOpenKnowledgeMenu}
           />
         </main>
 
@@ -265,14 +308,14 @@ export function PortfolioShell({
         className={`fixed inset-0 z-50 transition-transform duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
           isKnowledgeMenuOpen && !isKnowledgeDetailOpen
             ? "translate-x-0"
-            : isKnowledgeDetailOpen
+            : isKnowledgeDetailOpen && knowledgeReturnTarget === "menu"
             ? "-translate-x-full pointer-events-none"
             : "translate-x-full pointer-events-none"
         }`}
       >
         <KnowledgeCategoryMenuView
           categories={knowledgeCategories}
-          onSelectCategory={handleSelectKnowledgeCategory}
+          onSelectCategory={handleSelectKnowledgeCategoryFromMenu}
           onClose={handleCloseKnowledgeMenu}
         />
       </div>
@@ -288,6 +331,12 @@ export function PortfolioShell({
           <KnowledgeDetailView
             category={selectedKnowledgeCategory}
             onClose={handleCloseKnowledgeDetail}
+            backLabel={
+              knowledgeReturnTarget === "main"
+                ? "Volver a inicio"
+                : "Volver a categorías"
+            }
+            onOpenAllCategories={handleSwitchToAllCategories}
           />
         )}
       </div>
