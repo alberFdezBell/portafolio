@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import { ProjectsSection, ProjectItem } from "../ProjectsSection";
+import { ProjectDetailView } from "../ProjectDetailView";
 
 const mockProjects: ProjectItem[] = [
   {
@@ -116,5 +117,34 @@ describe("ProjectsSection", () => {
     // Click previous page
     fireEvent.click(prevBtn);
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
+  describe("ProjectDetailView", () => {
+    it("renders project title at top-left and status/featured pills below it", () => {
+      const handleClose = vi.fn();
+
+      render(
+        <ProjectDetailView
+          project={mockProjects[0]}
+          onClose={handleClose}
+        />
+      );
+
+      // Section header indicator
+      expect(screen.getByText("03 / Proyectos")).toBeInTheDocument();
+
+      // Heading 1 with project title
+      const heading = screen.getByRole("heading", { level: 1, name: "Sistema E-commerce" });
+      expect(heading).toBeInTheDocument();
+
+      // Pills
+      expect(screen.getByText("Producción")).toBeInTheDocument();
+      expect(screen.getByText("★ Proyecto Destacado")).toBeInTheDocument();
+
+      // Links & technologies rendered
+      expect(screen.getByText("Código fuente")).toBeInTheDocument();
+      expect(screen.getByText("Ejecutar Demo")).toBeInTheDocument();
+      expect(screen.getByText("Next.js")).toBeInTheDocument();
+    });
   });
 });

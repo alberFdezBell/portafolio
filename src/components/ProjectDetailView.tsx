@@ -229,10 +229,20 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
 
       {/* Contenido principal del proyecto */}
       <div className="flex-1 h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
-          {/* Cabecera: Título, Estado y Enlaces */}
-          <div className="space-y-6 pb-8 border-b border-white/10">
-            <div className="flex flex-wrap items-center gap-3">
+        {/* Cabecera del proyecto: fijada arriba a la izquierda en todo el ancho superior como en conocimientos */}
+        <div className="w-full px-6 sm:px-12 pt-8 sm:pt-10 pb-6 border-b border-white/10">
+          <div className="flex flex-col items-start gap-3">
+            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
+              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+              <span>03 / Proyectos</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+              {project.title}
+            </h1>
+
+            {/* Pills de estado y proyecto destacado debajo del título */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               {renderStatusBadge(project.status)}
               {project.featured === 1 && (
                 <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
@@ -240,10 +250,6 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
                 </span>
               )}
             </div>
-
-            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">
-              {project.title}
-            </h1>
 
             {/* Enlaces con icono y nombre */}
             {linksList.length > 0 && (
@@ -264,6 +270,10 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
               </div>
             )}
           </div>
+        </div>
+
+        {/* Contenido detallado del proyecto */}
+        <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
 
           {/* Carrusel multimedia (fotos o videos) */}
           {mediaList.length > 0 && (
