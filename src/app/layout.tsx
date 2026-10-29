@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Alberto Fernández Bellido | Senior Full-Stack Developer & Cloud Architect",
+    default: "Alberto Fernández Bellido",
     template: "%s | Alberto Fernández Bellido",
   },
   description:
@@ -49,10 +49,10 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_ES",
     url: siteUrl,
-    title: "Alberto Fernández Bellido | Senior Full-Stack Developer",
+    title: "Alberto Fernández Bellido",
     description:
       "Portafolio técnico de Alberto Fernández Bellido. Explora mi trayectoria, experiencia laboral, proyectos desplegados y arquitectura de sistemas.",
-    siteName: "Alberto Fernández Bellido - Portafolio",
+    siteName: "Alberto Fernández Bellido",
     images: [
       {
         url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&h=630&q=80",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alberto Fernández Bellido | Senior Full-Stack Developer",
+    title: "Alberto Fernández Bellido",
     description:
       "Portafolio técnico de Alberto Fernández Bellido. Explora proyectos, experiencia y arquitectura cloud.",
     creator: "@alberFdezBell",
