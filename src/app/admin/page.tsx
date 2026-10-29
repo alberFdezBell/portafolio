@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Shield,
@@ -18,53 +18,166 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Sparkles,
   ArrowUp,
   ArrowDown,
   Star,
   X,
   Video,
-  Image as ImageIcon,
   BookOpen,
   Download,
   UploadCloud,
   Database,
+  Pencil,
+  Eye,
+  Edit3,
 } from "lucide-react";
 import Link from "next/link";
 import { IconPickerModal } from "@/components/IconPickerModal";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
+// --- TYPES ---
+interface ProfileData {
+  name?: string;
+  title?: string;
+  email?: string;
+  location?: string;
+  status_badge?: string;
+  short_bio?: string;
+  avatar_url?: string;
+  about_story?: string;
+  github_url?: string;
+  linkedin_url?: string;
+}
+
+interface ExperienceData {
+  id: number | string;
+  company: string;
+  role: string;
+  location?: string;
+  start_date: string;
+  end_date: string;
+  is_current: number;
+  description: string;
+  skills: string; // JSON array of string
+  order_num?: number;
+  isNew?: boolean;
+}
+
+interface EducationData {
+  id: number | string;
+  institution: string;
+  degree: string;
+  field_of_study?: string;
+  start_year: string;
+  end_year: string;
+  description?: string;
+  order_num?: number;
+  isNew?: boolean;
+}
+
+interface MediaItem {
+  id?: string;
+  type: "image" | "video";
+  url: string;
+  is_primary?: boolean;
+  caption?: string;
+}
+
+interface LinkItem {
+  title: string;
+  url: string;
+  icon?: string;
+}
+
+interface ProjectData {
+  id: number | string;
+  title: string;
+  description: string;
+  long_description?: string;
+  tech_stack: string; // JSON array
+  image_url: string;
+  demo_url: string;
+  repo_url: string;
+  status?: string;
+  media?: string; // JSON array
+  links?: string; // JSON array
+  featured: number;
+  order_num?: number;
+  isNew?: boolean;
+}
+
+interface KnowledgeCategoryData {
+  id: number | string;
+  name: string;
+  slug?: string;
+  content: string;
+  order_num?: number;
+  featured?: number;
+  isNew?: boolean;
+}
+
+interface SocialData {
+  id: number | string;
+  platform: string;
+  url: string;
+  icon_name: string;
+  order_num?: number;
+  isNew?: boolean;
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
 
+  // Active Tab
   const [activeTab, setActiveTab] = useState<
-    "profile" | "experience" | "education" | "projects" | "knowledge" | "social" | "security"
+    "profile" | "projects" | "experience" | "education" | "knowledge" | "social" | "security"
   >("profile");
 
+  // Global states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(
-    null
-  );
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Data states
-  const [profile, setProfile] = useState<any>({});
-  const [experiences, setExperiences] = useState<any[]>([]);
-  const [education, setEducation] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [knowledgeCategories, setKnowledgeCategories] = useState<any[]>([]);
-  const [socials, setSocials] = useState<any[]>([]);
+  // Data
+  const [profile, setProfile] = useState<ProfileData>({});
+  const [experiences, setExperiences] = useState<ExperienceData[]>([]);
+  const [education, setEducation] = useState<EducationData[]>([]);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [knowledgeCategories, setKnowledgeCategories] = useState<KnowledgeCategoryData[]>([]);
+  const [socials, setSocials] = useState<SocialData[]>([]);
   const [twoFactorData, setTwoFactorData] = useState<any>(null);
 
-  // Icon modal state
-  const [iconModalOpen, setIconModalOpen] = useState(false);
-  const [currentSocialIndex, setCurrentSocialIndex] = useState<number | null>(null);
-  const [projectLinkTarget, setProjectLinkTarget] = useState<{ projectIdx: number; linkIdx: number } | null>(null);
-  const [newTechInputs, setNewTechInputs] = useState<Record<string | number, string>>({});
-  const [markdownPreviews, setMarkdownPreviews] = useState<Record<string | number, boolean>>({});
+  // --- MODAL STATES ---
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editingExperience, setEditingExperience] = useState<ExperienceData | null>(null);
+  const [editingEducation, setEditingEducation] = useState<EducationData | null>(null);
+  const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
+  const [editingKnowledge, setEditingKnowledge] = useState<KnowledgeCategoryData | null>(null);
+  const [editingSocial, setEditingSocial] = useState<SocialData | null>(null);
 
-  // Backup & Migration state
+  // Initial snapshots to detect modifications (Dirty Checking)
+  const [profileSnapshot, setProfileSnapshot] = useState("");
+  const [experienceSnapshot, setExperienceSnapshot] = useState("");
+  const [educationSnapshot, setEducationSnapshot] = useState("");
+  const [projectSnapshot, setProjectSnapshot] = useState("");
+  const [knowledgeSnapshot, setKnowledgeSnapshot] = useState("");
+  const [socialSnapshot, setSocialSnapshot] = useState("");
+
+  // Sub-modal for icon selection
+  const [iconModalOpen, setIconModalOpen] = useState(false);
+  const [iconTarget, setIconTarget] = useState<"social" | { linkIdx: number } | null>(null);
+
+  // Markdown previews toggles for modals
+  const [previewStory, setPreviewStory] = useState(false);
+  const [previewProjectDesc, setPreviewProjectDesc] = useState(false);
+  const [previewKnowledgeDesc, setPreviewKnowledgeDesc] = useState(false);
+
+  // Tag inputs
+  const [newProjectTech, setNewProjectTech] = useState("");
+  const [newExpSkill, setNewExpSkill] = useState("");
+
+  // Backup files
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -145,15 +258,12 @@ export default function AdminDashboardPage() {
     router.refresh();
   };
 
-  // Export JSON (All portfolio data for migration)
+  // Export JSON
   const handleExportJson = async () => {
     setExporting(true);
     try {
       const res = await fetch("/api/admin/backup");
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Error al exportar los datos");
-      }
+      if (!res.ok) throw new Error("Error al exportar");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -172,7 +282,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Import JSON (Restore/migrate all portfolio data)
+  // Import JSON
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -184,9 +294,7 @@ export default function AdminDashboardPage() {
     }
 
     const confirmed = window.confirm(
-      `¿Deseas importar el archivo "${file.name}"?\n\n` +
-      `¡ATENCIÓN! Esta acción reemplazará la información actual (perfil, proyectos, experiencias, formación y redes) con los datos del archivo JSON.\n\n` +
-      `Haz clic en Aceptar para proceder con la migración.`
+      `¿Deseas importar "${file.name}"?\nEsta acción reemplazará la información actual.`
     );
     if (!confirmed) {
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -196,30 +304,16 @@ export default function AdminDashboardPage() {
     setImporting(true);
     try {
       const text = await file.text();
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        throw new Error("El archivo no contiene un formato JSON válido");
-      }
-
+      const parsed = JSON.parse(text);
       const res = await fetch("/api/admin/backup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
       });
-
       const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || "Error al procesar la importación");
-      }
+      if (!res.ok) throw new Error(resData.error || "Error al procesar la importación");
 
-      const counts = resData.counts;
-      let summary = "Datos importados con éxito.";
-      if (counts) {
-        summary = `Migración completada: ${counts.projects || 0} proyectos, ${counts.experiences || 0} experiencias, ${counts.education || 0} formación.`;
-      }
-      notify(summary, "success");
+      notify("Datos importados con éxito.");
       await fetchAllData();
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error al importar el archivo JSON", "error");
@@ -229,7 +323,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Handle Photo Upload
+  // File Upload
   const handleFileUpload = async (file: File, callback: (url: string) => void) => {
     setSaving(true);
     const formData = new FormData();
@@ -243,7 +337,7 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Fallo en la subida");
       callback(data.url);
-      notify("Imagen subida con éxito.");
+      notify("Archivo subido con éxito.");
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error subiendo archivo", "error");
     } finally {
@@ -251,57 +345,88 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Save Profile
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ==========================================
+  // PROFILE MODAL HANDLERS
+  // ==========================================
+  const [profileForm, setProfileForm] = useState<ProfileData>({});
+  const isProfileDirty = useMemo(() => {
+    return isProfileModalOpen && JSON.stringify(profileForm) !== profileSnapshot;
+  }, [isProfileModalOpen, profileForm, profileSnapshot]);
+
+  const handleOpenProfileModal = () => {
+    const clone = JSON.parse(JSON.stringify(profile));
+    setProfileForm(clone);
+    setProfileSnapshot(JSON.stringify(clone));
+    setPreviewStory(false);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(profileForm),
       });
       if (!res.ok) throw new Error("Error al guardar perfil");
+      setProfile(profileForm);
       notify("Perfil e Historia guardados correctamente.");
+      setIsProfileModalOpen(false);
     } catch (err: unknown) {
-      notify(err instanceof Error ? err.message : "Error", "error");
+      notify(err instanceof Error ? err.message : "Error al guardar", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  // Experience Mutations
-  const handleAddExperience = () => {
-    setExperiences([
-      {
-        id: "temp-" + Date.now(),
-        company: "Nueva Empresa",
-        role: "Desarrollador Software",
-        location: "Remoto",
-        start_date: "2024",
-        end_date: "Presente",
-        is_current: 1,
-        description: "",
-        skills: "[]",
-        order_num: experiences.length + 1,
-        isNew: true,
-      },
-      ...experiences,
-    ]);
+  // ==========================================
+  // EXPERIENCE MODAL HANDLERS
+  // ==========================================
+  const isExperienceDirty = useMemo(() => {
+    return editingExperience !== null && JSON.stringify(editingExperience) !== experienceSnapshot;
+  }, [editingExperience, experienceSnapshot]);
+
+  const handleOpenNewExperience = () => {
+    const newExp: ExperienceData = {
+      id: "temp-" + Date.now(),
+      company: "Nueva Empresa",
+      role: "Desarrollador Software",
+      location: "Remoto",
+      start_date: new Date().getFullYear().toString(),
+      end_date: "Presente",
+      is_current: 1,
+      description: "",
+      skills: "[]",
+      order_num: experiences.length + 1,
+      isNew: true,
+    };
+    setEditingExperience(newExp);
+    setExperienceSnapshot(JSON.stringify(newExp));
+    setNewExpSkill("");
   };
 
-  const handleSaveExperience = async (item: any) => {
+  const handleOpenEditExperience = (item: ExperienceData) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    setEditingExperience(clone);
+    setExperienceSnapshot(JSON.stringify(clone));
+    setNewExpSkill("");
+  };
+
+  const handleSaveExperienceModal = async () => {
+    if (!editingExperience) return;
     setSaving(true);
     try {
-      const method = item.isNew ? "POST" : "PUT";
+      const method = editingExperience.isNew ? "POST" : "PUT";
       const res = await fetch("/api/admin/experience", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        body: JSON.stringify(editingExperience),
       });
       if (!res.ok) throw new Error("Error guardando experiencia");
       notify("Experiencia guardada con éxito.");
-      fetchAllData();
+      setEditingExperience(null);
+      await fetchAllData();
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error", "error");
     } finally {
@@ -310,15 +435,11 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteExperience = async (id: number | string) => {
-    if (typeof id === "string" && id.startsWith("temp-")) {
-      setExperiences(experiences.filter((e) => e.id !== id));
-      return;
-    }
     if (!confirm("¿Eliminar esta experiencia laboral?")) return;
     try {
       await fetch(`/api/admin/experience?id=${id}`, { method: "DELETE" });
       notify("Experiencia eliminada.");
-      fetchAllData();
+      await fetchAllData();
     } catch {
       notify("Error al eliminar", "error");
     }
@@ -330,14 +451,9 @@ export default function AdminDashboardPage() {
     const [moved] = updated.splice(fromIdx, 1);
     updated.splice(toIdx, 0, moved);
 
-    // Re-assign order_num sequentially (1, 2, 3...)
-    const reordered = updated.map((item, i) => ({
-      ...item,
-      order_num: i + 1,
-    }));
+    const reordered = updated.map((item, i) => ({ ...item, order_num: i + 1 }));
     setExperiences(reordered);
 
-    // Persist new order for all already saved items
     try {
       await Promise.all(
         reordered
@@ -356,36 +472,49 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Education Mutations
-  const handleAddEducation = () => {
-    setEducation([
-      {
-        id: "temp-" + Date.now(),
-        institution: "Universidad o Academia",
-        degree: "Título o Certificación",
-        field_of_study: "Ingeniería de Software",
-        start_year: "2022",
-        end_year: "2024",
-        description: "",
-        order_num: education.length + 1,
-        isNew: true,
-      },
-      ...education,
-    ]);
+  // ==========================================
+  // EDUCATION MODAL HANDLERS
+  // ==========================================
+  const isEducationDirty = useMemo(() => {
+    return editingEducation !== null && JSON.stringify(editingEducation) !== educationSnapshot;
+  }, [editingEducation, educationSnapshot]);
+
+  const handleOpenNewEducation = () => {
+    const newEdu: EducationData = {
+      id: "temp-" + Date.now(),
+      institution: "Universidad o Academia",
+      degree: "Título o Certificación",
+      field_of_study: "Ingeniería de Software",
+      start_year: (new Date().getFullYear() - 2).toString(),
+      end_year: new Date().getFullYear().toString(),
+      description: "",
+      order_num: education.length + 1,
+      isNew: true,
+    };
+    setEditingEducation(newEdu);
+    setEducationSnapshot(JSON.stringify(newEdu));
   };
 
-  const handleSaveEducation = async (item: any) => {
+  const handleOpenEditEducation = (item: EducationData) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    setEditingEducation(clone);
+    setEducationSnapshot(JSON.stringify(clone));
+  };
+
+  const handleSaveEducationModal = async () => {
+    if (!editingEducation) return;
     setSaving(true);
     try {
-      const method = item.isNew ? "POST" : "PUT";
+      const method = editingEducation.isNew ? "POST" : "PUT";
       const res = await fetch("/api/admin/education", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        body: JSON.stringify(editingEducation),
       });
-      if (!res.ok) throw new Error("Error guardando educación");
-      notify("Educación guardada con éxito.");
-      fetchAllData();
+      if (!res.ok) throw new Error("Error guardando formación");
+      notify("Formación guardada con éxito.");
+      setEditingEducation(null);
+      await fetchAllData();
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error", "error");
     } finally {
@@ -394,15 +523,11 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteEducation = async (id: number | string) => {
-    if (typeof id === "string" && id.startsWith("temp-")) {
-      setEducation(education.filter((e) => e.id !== id));
-      return;
-    }
     if (!confirm("¿Eliminar este registro de educación?")) return;
     try {
       await fetch(`/api/admin/education?id=${id}`, { method: "DELETE" });
       notify("Registro educativo eliminado.");
-      fetchAllData();
+      await fetchAllData();
     } catch {
       notify("Error al eliminar", "error");
     }
@@ -414,14 +539,9 @@ export default function AdminDashboardPage() {
     const [moved] = updated.splice(fromIdx, 1);
     updated.splice(toIdx, 0, moved);
 
-    // Re-assign order_num sequentially (1, 2, 3...)
-    const reordered = updated.map((item, i) => ({
-      ...item,
-      order_num: i + 1,
-    }));
+    const reordered = updated.map((item, i) => ({ ...item, order_num: i + 1 }));
     setEducation(reordered);
 
-    // Persist new order for all already saved items
     try {
       await Promise.all(
         reordered
@@ -440,30 +560,77 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Projects Mutations
-  const handleAddProject = () => {
-    setProjects([
-      {
-        id: "temp-" + Date.now(),
-        title: "Nuevo Proyecto",
-        description: "Breve descripción técnica del proyecto",
-        long_description: "",
-        status: "Producción",
-        tech_stack: '["Next.js", "Docker"]',
-        image_url: "",
-        media: "[]",
-        links: JSON.stringify([
-          { title: "Código fuente", url: "", icon: "github" },
-          { title: "Ejecutar Demo", url: "", icon: "external-link" },
-        ]),
-        demo_url: "#",
-        repo_url: "",
-        featured: 0,
-        order_num: projects.length + 1,
-        isNew: true,
-      },
-      ...projects,
-    ]);
+  // ==========================================
+  // PROJECT MODAL HANDLERS
+  // ==========================================
+  const isProjectDirty = useMemo(() => {
+    return editingProject !== null && JSON.stringify(editingProject) !== projectSnapshot;
+  }, [editingProject, projectSnapshot]);
+
+  const handleOpenNewProject = () => {
+    const newProj: ProjectData = {
+      id: "temp-" + Date.now(),
+      title: "Nuevo Proyecto",
+      description: "Breve descripción técnica del proyecto",
+      long_description: "",
+      status: "Producción",
+      tech_stack: JSON.stringify(["Next.js", "TypeScript"]),
+      image_url: "",
+      media: "[]",
+      links: JSON.stringify([
+        { title: "Código fuente", url: "", icon: "github" },
+        { title: "Ejecutar Demo", url: "", icon: "external-link" },
+      ]),
+      demo_url: "#",
+      repo_url: "",
+      featured: 0,
+      order_num: projects.length + 1,
+      isNew: true,
+    };
+    setEditingProject(newProj);
+    setProjectSnapshot(JSON.stringify(newProj));
+    setPreviewProjectDesc(false);
+    setNewProjectTech("");
+  };
+
+  const handleOpenEditProject = (item: ProjectData) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    setEditingProject(clone);
+    setProjectSnapshot(JSON.stringify(clone));
+    setPreviewProjectDesc(false);
+    setNewProjectTech("");
+  };
+
+  const handleSaveProjectModal = async () => {
+    if (!editingProject) return;
+    setSaving(true);
+    try {
+      const method = editingProject.isNew ? "POST" : "PUT";
+      const res = await fetch("/api/admin/projects", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingProject),
+      });
+      if (!res.ok) throw new Error("Error guardando proyecto");
+      notify("Proyecto guardado con éxito.");
+      setEditingProject(null);
+      await fetchAllData();
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteProject = async (id: number | string) => {
+    if (!confirm("¿Eliminar este proyecto?")) return;
+    try {
+      await fetch(`/api/admin/projects?id=${id}`, { method: "DELETE" });
+      notify("Proyecto eliminado.");
+      await fetchAllData();
+    } catch {
+      notify("Error al eliminar", "error");
+    }
   };
 
   const handleMoveProject = async (index: number, direction: "up" | "down") => {
@@ -474,10 +641,7 @@ export default function AdminDashboardPage() {
     const [moved] = reordered.splice(index, 1);
     reordered.splice(targetIndex, 0, moved);
 
-    const updated = reordered.map((item, i) => ({
-      ...item,
-      order_num: i + 1,
-    }));
+    const updated = reordered.map((item, i) => ({ ...item, order_num: i + 1 }));
     setProjects(updated);
 
     try {
@@ -498,105 +662,50 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSaveProject = async (item: any) => {
-    setSaving(true);
-    try {
-      const method = item.isNew ? "POST" : "PUT";
-      const res = await fetch("/api/admin/projects", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      });
-      if (!res.ok) throw new Error("Error guardando proyecto");
-      notify("Proyecto guardado con éxito.");
-      fetchAllData();
-    } catch (err: unknown) {
-      notify(err instanceof Error ? err.message : "Error", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
+  // ==========================================
+  // KNOWLEDGE CATEGORY MODAL HANDLERS
+  // ==========================================
+  const isKnowledgeDirty = useMemo(() => {
+    return editingKnowledge !== null && JSON.stringify(editingKnowledge) !== knowledgeSnapshot;
+  }, [editingKnowledge, knowledgeSnapshot]);
 
-  const handleDeleteProject = async (id: number | string) => {
-    if (typeof id === "string" && id.startsWith("temp-")) {
-      setProjects(projects.filter((p) => p.id !== id));
-      return;
-    }
-    if (!confirm("¿Eliminar este proyecto?")) return;
-    try {
-      await fetch(`/api/admin/projects?id=${id}`, { method: "DELETE" });
-      notify("Proyecto eliminado.");
-      fetchAllData();
-    } catch {
-      notify("Error al eliminar", "error");
-    }
-  };
-
-  // Knowledge Categories Mutations
-  const handleAddKnowledgeCategory = () => {
+  const handleOpenNewKnowledge = () => {
     const featuredCount = knowledgeCategories.filter((c) => c.featured === 1).length;
-    setKnowledgeCategories([
-      ...knowledgeCategories,
-      {
-        id: "temp-" + Date.now(),
-        name: "Nueva Categoría",
-        slug: "nueva-categoria-" + Date.now(),
-        content: "# Nueva Categoría\n\nEscribe aquí tus notas técnicas en formato Markdown...\n",
-        order_num: knowledgeCategories.length + 1,
-        featured: featuredCount < 3 ? 1 : 0,
-        isNew: true,
-      },
-    ]);
+    const newCat: KnowledgeCategoryData = {
+      id: "temp-" + Date.now(),
+      name: "Nueva Categoría",
+      slug: "nueva-categoria-" + Date.now(),
+      content: "# Nueva Categoría\n\nEscribe aquí tus notas técnicas en formato Markdown...\n",
+      order_num: knowledgeCategories.length + 1,
+      featured: featuredCount < 3 ? 1 : 0,
+      isNew: true,
+    };
+    setEditingKnowledge(newCat);
+    setKnowledgeSnapshot(JSON.stringify(newCat));
+    setPreviewKnowledgeDesc(false);
   };
 
-  const handleToggleFeaturedKnowledgeCategory = async (categoryIdx: number) => {
-    const target = knowledgeCategories[categoryIdx];
-    const isCurrentlyFeatured = target.featured === 1;
-
-    // If enabling, ensure not exceeding 3
-    if (!isCurrentlyFeatured) {
-      const currentFeaturedCount = knowledgeCategories.filter((c) => c.featured === 1).length;
-      if (currentFeaturedCount >= 3) {
-        notify("Máximo 3 categorías pueden estar destacadas en portada. Desmarca una primero.", "error");
-        return;
-      }
-    }
-
-    const updated = [...knowledgeCategories];
-    const nextFeatured = isCurrentlyFeatured ? 0 : 1;
-    updated[categoryIdx] = { ...target, featured: nextFeatured };
-    setKnowledgeCategories(updated);
-
-    if (!target.isNew && typeof target.id === "number") {
-      try {
-        await fetch("/api/admin/knowledge", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...target, featured: nextFeatured }),
-        });
-        notify(
-          nextFeatured === 1
-            ? "Categoría destacada en portada (05 / Conocimientos)."
-            : "Categoría retirada de la portada."
-        );
-      } catch {
-        notify("Error al actualizar estado en portada", "error");
-      }
-    }
+  const handleOpenEditKnowledge = (item: KnowledgeCategoryData) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    setEditingKnowledge(clone);
+    setKnowledgeSnapshot(JSON.stringify(clone));
+    setPreviewKnowledgeDesc(false);
   };
 
-  const handleSaveKnowledgeCategory = async (item: any) => {
+  const handleSaveKnowledgeModal = async () => {
+    if (!editingKnowledge) return;
     setSaving(true);
     try {
-      const method = item.isNew ? "POST" : "PUT";
+      const method = editingKnowledge.isNew ? "POST" : "PUT";
       const res = await fetch("/api/admin/knowledge", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        body: JSON.stringify(editingKnowledge),
       });
       if (!res.ok) throw new Error("Error guardando categoría");
-      notify("Categoría guardada con éxito.");
-      fetchAllData();
+      notify("Categoría de conocimiento guardada con éxito.");
+      setEditingKnowledge(null);
+      await fetchAllData();
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error", "error");
     } finally {
@@ -604,22 +713,18 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteKnowledgeCategory = async (id: number | string) => {
-    if (typeof id === "string" && id.startsWith("temp-")) {
-      setKnowledgeCategories(knowledgeCategories.filter((c) => c.id !== id));
-      return;
-    }
+  const handleDeleteKnowledge = async (id: number | string) => {
     if (!confirm("¿Eliminar esta categoría de conocimientos?")) return;
     try {
       await fetch(`/api/admin/knowledge?id=${id}`, { method: "DELETE" });
       notify("Categoría eliminada.");
-      fetchAllData();
+      await fetchAllData();
     } catch {
       notify("Error al eliminar categoría", "error");
     }
   };
 
-  const handleMoveKnowledgeCategory = async (index: number, direction: "up" | "down") => {
+  const handleMoveKnowledge = async (index: number, direction: "up" | "down") => {
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= knowledgeCategories.length) return;
 
@@ -627,10 +732,7 @@ export default function AdminDashboardPage() {
     const [moved] = reordered.splice(index, 1);
     reordered.splice(targetIndex, 0, moved);
 
-    const updated = reordered.map((item, i) => ({
-      ...item,
-      order_num: i + 1,
-    }));
+    const updated = reordered.map((item, i) => ({ ...item, order_num: i + 1 }));
     setKnowledgeCategories(updated);
 
     try {
@@ -645,59 +747,46 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleAttachKnowledgeImage = async (categoryIdx: number, file: File) => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
+  // ==========================================
+  // SOCIAL MODAL HANDLERS
+  // ==========================================
+  const isSocialDirty = useMemo(() => {
+    return editingSocial !== null && JSON.stringify(editingSocial) !== socialSnapshot;
+  }, [editingSocial, socialSnapshot]);
 
-    notify("Subiendo imagen adjunta...", "success");
-    try {
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Error al subir imagen");
-      const data = await res.json();
-      if (!data.url) throw new Error("No se devolvió la URL de la imagen");
-
-      const updated = [...knowledgeCategories];
-      const curContent = updated[categoryIdx].content || "";
-      const imageMarkdown = `\n\n![${file.name.replace(/\.[^/.]+$/, "")}](${data.url})\n\n`;
-      updated[categoryIdx].content = curContent + imageMarkdown;
-      setKnowledgeCategories(updated);
-      notify("Imagen adjuntada al contenido markdown.");
-    } catch (err: unknown) {
-      notify(err instanceof Error ? err.message : "Error al subir imagen", "error");
-    }
+  const handleOpenNewSocial = () => {
+    const newSoc: SocialData = {
+      id: "temp-" + Date.now(),
+      platform: "Nueva Red",
+      url: "https://",
+      icon_name: "globe",
+      order_num: socials.length + 1,
+      isNew: true,
+    };
+    setEditingSocial(newSoc);
+    setSocialSnapshot(JSON.stringify(newSoc));
   };
 
-  // Social Links Mutations
-  const handleAddSocial = () => {
-    setSocials([
-      ...socials,
-      {
-        id: "temp-" + Date.now(),
-        platform: "Nueva Red",
-        url: "https://",
-        icon_name: "globe",
-        order_num: socials.length + 1,
-        isNew: true,
-      },
-    ]);
+  const handleOpenEditSocial = (item: SocialData) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    setEditingSocial(clone);
+    setSocialSnapshot(JSON.stringify(clone));
   };
 
-  const handleSaveSocial = async (item: any) => {
+  const handleSaveSocialModal = async () => {
+    if (!editingSocial) return;
     setSaving(true);
     try {
-      const method = item.isNew ? "POST" : "PUT";
+      const method = editingSocial.isNew ? "POST" : "PUT";
       const res = await fetch("/api/admin/social", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        body: JSON.stringify(editingSocial),
       });
       if (!res.ok) throw new Error("Error guardando enlace");
       notify("Enlace guardado.");
-      fetchAllData();
+      setEditingSocial(null);
+      await fetchAllData();
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Error", "error");
     } finally {
@@ -706,15 +795,11 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteSocial = async (id: number | string) => {
-    if (typeof id === "string" && id.startsWith("temp-")) {
-      setSocials(socials.filter((s) => s.id !== id));
-      return;
-    }
     if (!confirm("¿Eliminar este enlace?")) return;
     try {
       await fetch(`/api/admin/social?id=${id}`, { method: "DELETE" });
       notify("Enlace eliminado.");
-      fetchAllData();
+      await fetchAllData();
     } catch {
       notify("Error al eliminar", "error");
     }
@@ -794,7 +879,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs font-mono text-rose-300 hover:bg-rose-500/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs font-mono text-rose-300 hover:bg-rose-500/20 transition-colors cursor-pointer"
           >
             <LogOut size={13} />
             <span>Cerrar Sesión</span>
@@ -818,16 +903,15 @@ export default function AdminDashboardPage() {
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 border-b border-white/10 text-xs font-mono">
           {[
             { id: "profile", label: "Perfil & Historia", icon: User },
-            { id: "experience", label: "Experiencia Laboral", icon: Briefcase },
-            { id: "projects", label: "Proyectos", icon: FolderGit2 },
-            { id: "education", label: "Estudios & Certs", icon: GraduationCap },
-            { id: "knowledge", label: "Conocimientos", icon: BookOpen },
-            { id: "social", label: "Redes & CDN Iconos", icon: Share2 },
+            { id: "projects", label: "Proyectos", icon: FolderGit2, count: projects.length },
+            { id: "experience", label: "Experiencia", icon: Briefcase, count: experiences.length },
+            { id: "education", label: "Formación", icon: GraduationCap, count: education.length },
+            { id: "knowledge", label: "Conocimientos", icon: BookOpen, count: knowledgeCategories.length },
+            { id: "social", label: "Redes", icon: Share2, count: socials.length },
             { id: "security", label: "Seguridad & 2FA", icon: KeyRound },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -836,7 +920,7 @@ export default function AdminDashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all shrink-0 ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all shrink-0 cursor-pointer ${
                   isActive
                     ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
                     : "bg-[#0d1322] border-white/5 text-slate-400 hover:text-white hover:bg-slate-800"
@@ -844,537 +928,181 @@ export default function AdminDashboardPage() {
               >
                 <Icon size={15} />
                 <span>{tab.label}</span>
+                {typeof tab.count === "number" && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      isActive ? "bg-emerald-500/25 text-emerald-300" : "bg-white/5 text-slate-500"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* TAB 1: PROFILE & STORY */}
+        {/* ========================================================= */}
+        {/* TAB 1: PROFILE & STORY DASHBOARD */}
+        {/* ========================================================= */}
         {activeTab === "profile" && (
-          <form onSubmit={handleSaveProfile} className="mt-8 space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-white/10">
-                <div>
-                  <h2 className="text-lg font-bold text-white">Datos Principales e Historia</h2>
-                  <p className="text-xs text-slate-400 font-mono">
-                    Controla el contenido de la cabecera y la sección narrativa
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <Save size={15} />
-                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-slate-300">Nombre Completo</label>
-                  <input
-                    type="text"
-                    value={profile.name || ""}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-slate-300">Título / Especialidad</label>
-                  <input
-                    type="text"
-                    value={profile.title || ""}
-                    onChange={(e) => setProfile({ ...profile, title: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-slate-300">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    value={profile.email || ""}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-slate-300">Ubicación</label>
-                  <input
-                    type="text"
-                    value={profile.location || ""}
-                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="block text-xs font-mono text-slate-300">
-                    Badge de Estado (Navbar & Header)
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.status_badge || ""}
-                    onChange={(e) => setProfile({ ...profile, status_badge: e.target.value })}
-                    placeholder="🟢 Disponible para nuevos proyectos"
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="block text-xs font-mono text-slate-300">
-                    Bio Breve (Hero)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={profile.short_bio || ""}
-                    onChange={(e) => setProfile({ ...profile, short_bio: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                {/* Avatar and Upload */}
-                <div className="space-y-2 md:col-span-2 p-4 rounded-xl border border-white/5 bg-slate-900/60">
-                  <label className="block text-xs font-mono text-slate-300">
-                    Foto de Perfil / Avatar (URL o Subir Archivo local)
-                  </label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {profile.avatar_url && (
-                      <img
-                        src={profile.avatar_url}
-                        alt="Avatar"
-                        className="w-14 h-14 rounded-xl object-cover border border-emerald-500/40"
-                      />
-                    )}
-                    <input
-                      type="text"
-                      value={profile.avatar_url || ""}
-                      onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                      placeholder="https://... o /uploads/..."
-                      className="flex-1 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                    />
-                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-colors">
-                      <Upload size={14} />
-                      <span>Subir Foto</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, (url) => setProfile({ ...profile, avatar_url: url }));
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Narrative Story */}
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="block text-xs font-mono text-slate-300">
-                    Mi Historia Completa (Separa los párrafos con saltos de línea dobles)
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={profile.about_story || ""}
-                    onChange={(e) => setProfile({ ...profile, about_story: e.target.value })}
-                    placeholder="Explica cómo empezaste en el desarrollo, tu evolución y tu enfoque actual..."
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-4 text-sm text-white focus:outline-none focus:border-emerald-500 leading-relaxed font-sans"
-                  />
-                </div>
-              </div>
-            </div>
-          </form>
-        )}
-
-        {/* TAB 2: EXPERIENCE */}
-        {activeTab === "experience" && (
           <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Experiencia Laboral</h2>
+                <h2 className="text-xl font-bold text-white">Perfil & Historia</h2>
                 <p className="text-xs text-slate-400 font-mono">
-                  Añade empresas, periodos y tecnologías utilizadas
+                  Datos principales del portafolio, foto de perfil e historia narrativa.
                 </p>
               </div>
               <button
-                onClick={handleAddExperience}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
+                type="button"
+                onClick={handleOpenProfileModal}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
               >
-                <Plus size={15} />
-                <span>Añadir Experiencia</span>
+                <Pencil size={15} />
+                <span>Editar Perfil & Historia</span>
               </button>
             </div>
 
-            <div className="space-y-4">
-              {experiences.map((exp, idx) => (
-                <div
-                  key={exp.id}
-                  className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-4 shadow-xl"
-                >
-                  {/* Card Header: Position, Title & Reorder buttons */}
-                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                        #{idx + 1}
-                      </span>
-                      <span className="text-xs font-bold text-white truncate max-w-xs sm:max-w-md">
-                        {exp.role || "Nuevo Puesto"} — <span className="text-slate-400 font-normal">{exp.company || "Empresa"}</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Mover:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveExperience(idx, idx - 1)}
-                        disabled={idx === 0}
-                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
-                        title="Subir posición (aparecerá antes)"
-                        aria-label="Subir posición"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveExperience(idx, idx + 1)}
-                        disabled={idx === experiences.length - 1}
-                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
-                        title="Bajar posición (aparecerá después)"
-                        aria-label="Bajar posición"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                    </div>
+            {/* Visual Overview Card */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-white/5">
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.name || "Avatar"}
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center text-slate-500">
+                    <User size={32} />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Empresa</label>
-                      <input
-                        type="text"
-                        value={exp.company}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].company = e.target.value;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Rol / Puesto</label>
-                      <input
-                        type="text"
-                        value={exp.role}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].role = e.target.value;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Ubicación</label>
-                      <input
-                        type="text"
-                        value={exp.location || ""}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].location = e.target.value;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                        Orden numérico
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={exp.order_num ?? idx + 1}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].order_num = parseInt(e.target.value) || 0;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Fecha Inicio</label>
-                      <input
-                        type="text"
-                        value={exp.start_date}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].start_date = e.target.value;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Fecha Fin</label>
-                      <input
-                        type="text"
-                        value={exp.end_date || ""}
-                        onChange={(e) => {
-                          const updated = [...experiences];
-                          updated[idx].end_date = e.target.value;
-                          setExperiences(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div className="flex items-center pt-5 sm:col-span-2">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-slate-300">
-                        <input
-                          type="checkbox"
-                          checked={exp.is_current === 1}
-                          onChange={(e) => {
-                            const updated = [...experiences];
-                            updated[idx].is_current = e.target.checked ? 1 : 0;
-                            setExperiences(updated);
-                          }}
-                          className="rounded border-white/10 bg-slate-900 text-emerald-500"
-                        />
-                        <span>Puesto Actual</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                      Descripción detallada (se despliega con el botón &quot;&gt;&quot; en la web)
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder="Detalla las responsabilidades, proyectos clave, logros técnicos o funciones en esta experiencia..."
-                      value={exp.description || ""}
-                      onChange={(e) => {
-                        const updated = [...experiences];
-                        updated[idx].description = e.target.value;
-                        setExperiences(updated);
-                      }}
-                      className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white placeholder-slate-500 leading-relaxed"
-                    />
-                    <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                      Esta descripción se despliega interactivamente al pulsar el botón &quot;&gt;&quot; de cada trayectoria en el portafolio.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                      Tecnologías (JSON array o separadas por comas ej: [&quot;React&quot;, &quot;Docker&quot;])
-                    </label>
-                    <input
-                      type="text"
-                      value={exp.skills || ""}
-                      onChange={(e) => {
-                        const updated = [...experiences];
-                        updated[idx].skills = e.target.value;
-                        setExperiences(updated);
-                      }}
-                      className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/5">
-                    <button
-                      onClick={() => handleDeleteExperience(exp.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors"
-                    >
-                      <Trash2 size={13} />
-                      <span>Eliminar</span>
-                    </button>
-                    <button
-                      onClick={() => handleSaveExperience(exp)}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-                    >
-                      <Save size={13} />
-                      <span>Guardar</span>
-                    </button>
+                )}
+                <div className="space-y-1 min-w-0">
+                  <h3 className="text-2xl font-bold text-white tracking-tight truncate">
+                    {profile.name || "Sin nombre configurado"}
+                  </h3>
+                  <p className="text-sm font-mono text-emerald-400">
+                    {profile.title || "Sin título definido"}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-mono text-slate-400">
+                    {profile.email && <span>✉ {profile.email}</span>}
+                    {profile.location && <span>📍 {profile.location}</span>}
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {profile.status_badge && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                    Badge de Estado
+                  </span>
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 font-mono text-xs text-emerald-300">
+                    {profile.status_badge}
+                  </div>
+                </div>
+              )}
+
+              {profile.short_bio && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                    Biografía Corta (Hero)
+                  </span>
+                  <p className="text-sm text-slate-300 leading-relaxed bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                    {profile.short_bio}
+                  </p>
+                </div>
+              )}
+
+              {profile.about_story && (
+                <div className="space-y-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                    Historia Narrativa (01 / Sobre mí)
+                  </span>
+                  <div className="p-5 rounded-xl bg-slate-900/40 border border-white/5 text-sm text-slate-300 max-h-56 overflow-y-auto leading-relaxed">
+                    <MarkdownRenderer content={profile.about_story} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* TAB 3: PROJECTS */}
+        {/* ========================================================= */}
+        {/* TAB 2: PROJECTS DASHBOARD */}
+        {/* ========================================================= */}
         {activeTab === "projects" && (
           <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Proyectos</h2>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>Proyectos</span>
+                  <span className="text-xs font-mono text-slate-500 font-normal">
+                    [{projects.length} registrados]
+                  </span>
+                </h2>
                 <p className="text-xs text-slate-400 font-mono">
-                  Administra sistemas desplegados, carrusel multimedia, estado y enlaces
+                  Administra las tarjetas de proyectos, estados, multimedia y tecnologías.
                 </p>
               </div>
               <button
-                onClick={handleAddProject}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md active:scale-95"
+                type="button"
+                onClick={handleOpenNewProject}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
               >
-                <Plus size={15} />
-                <span>Añadir Proyecto</span>
+                <Plus size={16} />
+                <span>Nuevo Proyecto</span>
               </button>
             </div>
 
-            <div className="space-y-8">
-              {projects.map((proj, idx) => {
-                // Parse media list
-                let mediaList: Array<{ id?: string; type: "image" | "video"; url: string; is_primary?: boolean; caption?: string }> = [];
-                try {
-                  mediaList = JSON.parse(proj.media || "[]");
-                  if (!Array.isArray(mediaList)) mediaList = [];
-                } catch {
-                  mediaList = [];
-                }
-                if (mediaList.length === 0 && proj.image_url) {
-                  mediaList = [{ type: "image", url: proj.image_url, is_primary: true }];
-                }
-
-                // Parse links list
-                let linksList: Array<{ title: string; url: string; icon?: string }> = [];
-                try {
-                  linksList = JSON.parse(proj.links || "[]");
-                  if (!Array.isArray(linksList)) linksList = [];
-                } catch {
-                  linksList = [];
-                }
-                if (linksList.length === 0 && (proj.repo_url || proj.demo_url)) {
-                  if (proj.repo_url) linksList.push({ title: "Código fuente", url: proj.repo_url, icon: "github" });
-                  if (proj.demo_url && proj.demo_url !== "#") linksList.push({ title: "Ejecutar Demo", url: proj.demo_url, icon: "external-link" });
-                }
-
-                // Parse tech stack
-                let techList: string[] = [];
-                try {
-                  techList = JSON.parse(proj.tech_stack || "[]");
-                  if (!Array.isArray(techList)) techList = [];
-                } catch {
-                  techList = proj.tech_stack ? proj.tech_stack.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
-                }
-
-                const techInputValue = newTechInputs[proj.id] || "";
-
-                const handleAddTech = (techToAdd?: string) => {
-                  const val = (techToAdd || techInputValue).trim();
-                  if (!val || techList.includes(val)) return;
-                  const updated = [...techList, val];
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].tech_stack = JSON.stringify(updated);
-                  setProjects(updatedProjects);
-                  setNewTechInputs((prev) => ({ ...prev, [proj.id]: "" }));
-                };
-
-                const handleRemoveTech = (tIdx: number) => {
-                  const updated = techList.filter((_, i) => i !== tIdx);
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].tech_stack = JSON.stringify(updated);
-                  setProjects(updatedProjects);
-                };
-
-                const handleAddMedia = (type: "image" | "video" = "image") => {
-                  const newMedia = [
-                    ...mediaList,
-                    {
-                      id: String(Date.now()),
-                      type,
-                      url: "",
-                      is_primary: mediaList.length === 0,
-                    },
-                  ];
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].media = JSON.stringify(newMedia);
-                  setProjects(updatedProjects);
-                };
-
-                const handleUpdateMedia = (mIdx: number, field: string, value: any) => {
-                  const updatedMedia = [...mediaList];
-                  updatedMedia[mIdx] = { ...updatedMedia[mIdx], [field]: value };
-                  if (field === "is_primary" && value === true) {
-                    updatedMedia.forEach((m, i) => {
-                      m.is_primary = i === mIdx;
-                    });
-                    if (updatedMedia[mIdx].url) {
-                      projects[idx].image_url = updatedMedia[mIdx].url;
-                    }
+            {/* Projects Grid / List */}
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {projects.map((proj, idx) => {
+                  let parsedTech: string[] = [];
+                  try {
+                    parsedTech = JSON.parse(proj.tech_stack || "[]");
+                  } catch {
+                    parsedTech = [];
                   }
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].media = JSON.stringify(updatedMedia);
-                  setProjects(updatedProjects);
-                };
 
-                const handleRemoveMedia = (mIdx: number) => {
-                  const updatedMedia = mediaList.filter((_, i) => i !== mIdx);
-                  if (updatedMedia.length > 0 && !updatedMedia.some((m) => m.is_primary)) {
-                    updatedMedia[0].is_primary = true;
-                  }
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].media = JSON.stringify(updatedMedia);
-                  const primary = updatedMedia.find((m) => m.is_primary);
-                  updatedProjects[idx].image_url = primary?.url || updatedMedia[0]?.url || "";
-                  setProjects(updatedProjects);
-                };
+                  return (
+                    <div
+                      key={proj.id}
+                      className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 flex flex-col justify-between space-y-4 hover:border-emerald-500/30 transition-all shadow-md group"
+                    >
+                      {/* Top Row: Index, Status & Reorder */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
+                            #{idx + 1}
+                          </span>
+                          <span
+                            className={`text-[11px] font-mono px-2 py-0.5 rounded-full border ${
+                              proj.status === "En desarrollo"
+                                ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                : proj.status === "Finalizado"
+                                ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            }`}
+                          >
+                            {proj.status || "Producción"}
+                          </span>
+                          {proj.featured === 1 && (
+                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
+                              <Star size={11} className="fill-emerald-400" />
+                              <span>Portada</span>
+                            </span>
+                          )}
+                        </div>
 
-                const handleAddLink = () => {
-                  const newLinks = [
-                    ...linksList,
-                    { title: "Enlace", url: "https://", icon: "external-link" },
-                  ];
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].links = JSON.stringify(newLinks);
-                  setProjects(updatedProjects);
-                };
-
-                const handleUpdateLink = (lIdx: number, field: string, value: string) => {
-                  const updatedLinks = [...linksList];
-                  updatedLinks[lIdx] = { ...updatedLinks[lIdx], [field]: value };
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].links = JSON.stringify(updatedLinks);
-                  // Sync repo_url & demo_url if applicable
-                  if (field === "url") {
-                    if (updatedLinks[lIdx].icon === "github" || updatedLinks[lIdx].title.toLowerCase().includes("código") || updatedLinks[lIdx].title.toLowerCase().includes("repo")) {
-                      updatedProjects[idx].repo_url = value;
-                    }
-                    if (updatedLinks[lIdx].title.toLowerCase().includes("demo") || updatedLinks[lIdx].icon === "external-link") {
-                      updatedProjects[idx].demo_url = value;
-                    }
-                  }
-                  setProjects(updatedProjects);
-                };
-
-                const handleRemoveLink = (lIdx: number) => {
-                  const updatedLinks = linksList.filter((_, i) => i !== lIdx);
-                  const updatedProjects = [...projects];
-                  updatedProjects[idx].links = JSON.stringify(updatedLinks);
-                  setProjects(updatedProjects);
-                };
-
-                return (
-                  <div
-                    key={proj.id}
-                    className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-6 shadow-xl relative"
-                  >
-                    {/* Header Row: Title, Ordering, Status, Featured */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
-                      <div className="flex items-center gap-3 flex-1">
-                        {/* Order Controls */}
-                        <div className="flex flex-col gap-1 shrink-0">
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => handleMoveProject(idx, "up")}
                             disabled={idx === 0}
-                            className="p-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-20 text-slate-300 disabled:cursor-not-allowed transition-all"
-                            title="Subir de posición"
+                            className="p-1 rounded border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                            title="Subir posición"
                           >
                             <ArrowUp size={12} />
                           </button>
@@ -1382,1385 +1110,480 @@ export default function AdminDashboardPage() {
                             type="button"
                             onClick={() => handleMoveProject(idx, "down")}
                             disabled={idx === projects.length - 1}
-                            className="p-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-20 text-slate-300 disabled:cursor-not-allowed transition-all"
-                            title="Bajar de posición"
+                            className="p-1 rounded border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                            title="Bajar posición"
                           >
                             <ArrowDown size={12} />
                           </button>
                         </div>
-
-                        <div className="flex-1">
-                          <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                            Título del Proyecto
-                          </label>
-                          <input
-                            type="text"
-                            value={proj.title}
-                            onChange={(e) => {
-                              const updated = [...projects];
-                              updated[idx].title = e.target.value;
-                              setProjects(updated);
-                            }}
-                            className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-emerald-500/50"
-                          />
-                        </div>
                       </div>
 
-                      {/* Status & Featured Controls */}
-                      <div className="flex flex-wrap items-center gap-4">
-                        <div>
-                          <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                            Estado del Proyecto
-                          </label>
-                          <div className="flex items-center gap-1.5 p-1 rounded-lg border border-white/10 bg-slate-900">
-                            {(["En desarrollo", "Producción", "Finalizado"] as const).map((st) => (
-                              <button
-                                key={st}
-                                type="button"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  updated[idx].status = st;
-                                  setProjects(updated);
-                                }}
-                                className={`px-2.5 py-1 rounded text-xs font-mono transition-all flex items-center gap-1.5 ${
-                                  (proj.status || "Producción") === st
-                                    ? st === "En desarrollo"
-                                      ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold"
-                                      : st === "Producción"
-                                      ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold"
-                                      : "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-bold"
-                                    : "text-slate-400 hover:text-white"
-                                }`}
-                              >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full ${
-                                    st === "En desarrollo"
-                                      ? "bg-amber-400"
-                                      : st === "Producción"
-                                      ? "bg-emerald-400"
-                                      : "bg-cyan-400"
-                                  }`}
-                                />
-                                <span>{st}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="pt-5">
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-slate-300 bg-white/5 px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 transition-all">
-                            <input
-                              type="checkbox"
-                              checked={proj.featured === 1}
-                              onChange={(e) => {
-                                const updated = [...projects];
-                                updated[idx].featured = e.target.checked ? 1 : 0;
-                                setProjects(updated);
-                              }}
-                              className="rounded border-white/10 bg-slate-900 text-emerald-500"
-                            />
-                            <Sparkles size={14} className="text-emerald-400" />
-                            <span>Destacado</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Descriptions Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                          Descripción Corta (Aparece en la tarjeta inicial)
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={proj.description || ""}
-                          onChange={(e) => {
-                            const updated = [...projects];
-                            updated[idx].description = e.target.value;
-                            setProjects(updated);
-                          }}
-                          placeholder="Resumen conciso del proyecto..."
-                          className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50"
-                        />
+                      {/* Middle: Title & Description */}
+                      <div className="space-y-1.5 flex-1">
+                        <h4 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-2">
+                          {proj.title}
+                        </h4>
+                        <p className="text-xs text-slate-400 line-clamp-2 font-normal">
+                          {proj.description || "Sin descripción breve"}
+                        </p>
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-[11px] font-mono text-slate-400">
-                            Descripción Detallada (Aparece al abrir el proyecto)
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono text-emerald-400/80 hidden sm:inline">
-                              Soporta Markdown
+                      {/* Tech stack pills */}
+                      {parsedTech.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-slate-400 line-clamp-1">
+                          {parsedTech.slice(0, 4).map((t, ti) => (
+                            <span key={ti} className="bg-slate-900 px-2 py-0.5 rounded border border-white/5">
+                              #{t}
                             </span>
-                            <div className="flex rounded-lg bg-slate-950 p-0.5 border border-white/10 text-[10px] font-mono">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setMarkdownPreviews((prev) => ({
-                                    ...prev,
-                                    [proj.id || idx]: false,
-                                  }))
-                                }
-                                className={`px-2.5 py-1 rounded transition-colors ${
-                                  !markdownPreviews[proj.id || idx]
-                                    ? "bg-emerald-500/20 text-emerald-300 font-semibold"
-                                    : "text-slate-400 hover:text-slate-200"
-                                }`}
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setMarkdownPreviews((prev) => ({
-                                    ...prev,
-                                    [proj.id || idx]: true,
-                                  }))
-                                }
-                                className={`px-2.5 py-1 rounded transition-colors ${
-                                  markdownPreviews[proj.id || idx]
-                                    ? "bg-emerald-500/20 text-emerald-300 font-semibold"
-                                    : "text-slate-400 hover:text-slate-200"
-                                }`}
-                              >
-                                Vista Previa
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {!markdownPreviews[proj.id || idx] ? (
-                          <>
-                            {/* Toolbar de Markdown con atajos */}
-                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5 p-1.5 rounded-lg bg-slate-950/70 border border-white/5 text-[11px] font-mono text-slate-400">
-                              <span className="text-[10px] text-slate-500 px-1">Atajos:</span>
-                              <button
-                                type="button"
-                                title="Título H2"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur}\n\n## Nuevo Encabezado\n` : `## Nuevo Encabezado\n`;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                ## H2
-                              </button>
-                              <button
-                                type="button"
-                                title="Negrita"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur} **texto en negrita** ` : `**texto en negrita** `;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
-                              >
-                                B
-                              </button>
-                              <button
-                                type="button"
-                                title="Cursiva"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur} *texto en cursiva* ` : `*texto en cursiva* `;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors italic"
-                              >
-                                I
-                              </button>
-                              <button
-                                type="button"
-                                title="Lista"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur}\n- Elemento 1\n- Elemento 2\n` : `- Elemento 1\n- Elemento 2\n`;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                • Lista
-                              </button>
-                              <button
-                                type="button"
-                                title="Código en línea"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur} \`código\` ` : `\`código\` `;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                `código`
-                              </button>
-                              <button
-                                type="button"
-                                title="Bloque de código"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur}\n\`\`\`typescript\n// Tu código aquí\n\`\`\`\n` : `\`\`\`typescript\n// Tu código aquí\n\`\`\`\n`;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                ```bloque```
-                              </button>
-                              <button
-                                type="button"
-                                title="Enlace"
-                                onClick={() => {
-                                  const updated = [...projects];
-                                  const cur = updated[idx].long_description || "";
-                                  updated[idx].long_description = cur ? `${cur} [Texto del enlace](https://...) ` : `[Texto del enlace](https://...) `;
-                                  setProjects(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                Enlace
-                              </button>
-                            </div>
-
-                            <textarea
-                              rows={6}
-                              value={proj.long_description || ""}
-                              onChange={(e) => {
-                                const updated = [...projects];
-                                updated[idx].long_description = e.target.value;
-                                setProjects(updated);
-                              }}
-                              placeholder="Escribe la descripción en Markdown:
-## Arquitectura & Retos
-Explicación detallada del proyecto, decisiones técnicas y soluciones implementadas.
-
-### Características Principales
-- **Rendimiento**: Cargas subsegundo con SSR.
-- **Seguridad**: Autenticación 2FA TOTP."
-                              className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50 font-mono"
-                            />
-                          </>
-                        ) : (
-                          <div className="w-full min-h-[160px] max-h-[350px] overflow-y-auto rounded-lg border border-white/10 bg-slate-950 p-4 text-xs text-white">
-                            {proj.long_description ? (
-                              <MarkdownRenderer content={proj.long_description} />
-                            ) : (
-                              <p className="text-slate-500 italic font-mono text-xs">
-                                No hay contenido aún. Cambia a &quot;Editar&quot; para redactar en Markdown.
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* INTUITIVE TECH STACK MANAGER */}
-                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-mono font-semibold text-emerald-400">
-                          Stack & Tecnologías
-                        </label>
-                        <span className="text-[11px] font-mono text-slate-500">
-                          {techList.length} tecnologías configuradas
-                        </span>
-                      </div>
-
-                      {/* Current Tech Chips */}
-                      <div className="flex flex-wrap gap-2 min-h-8 p-2 rounded-lg border border-white/5 bg-slate-950/60">
-                        {techList.length === 0 ? (
-                          <span className="text-xs font-mono text-slate-500 italic py-0.5">
-                            Sin tecnologías añadidas aún. Usa el buscador o las sugerencias inferiores.
-                          </span>
-                        ) : (
-                          techList.map((tech, tIdx) => (
-                            <span
-                              key={tIdx}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 border border-white/10 text-xs font-mono text-slate-200 shadow-sm"
-                            >
-                              <span className="text-emerald-400 font-bold">#</span>
-                              <span>{tech}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTech(tIdx)}
-                                className="text-slate-400 hover:text-rose-400 ml-0.5 transition-colors"
-                                title="Eliminar tecnología"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Add Tech Input */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={techInputValue}
-                          onChange={(e) =>
-                            setNewTechInputs((prev) => ({ ...prev, [proj.id]: e.target.value }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddTech();
-                            }
-                          }}
-                          placeholder="Escribe una tecnología (ej: Docker, Tailwind CSS, PostgreSQL) y pulsa Enter..."
-                          className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAddTech()}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-mono transition-all active:scale-95"
-                        >
-                          <Plus size={13} />
-                          <span>Añadir</span>
-                        </button>
-                      </div>
-
-                      {/* Quick Suggestions */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[11px] font-mono text-slate-500 mr-1">Sugerencias rápidas:</span>
-                        {[
-                          "Next.js",
-                          "TypeScript",
-                          "React",
-                          "Docker",
-                          "Node.js",
-                          "Tailwind CSS",
-                          "PostgreSQL",
-                          "SQLite",
-                          "Python",
-                          "Go",
-                          "Redis",
-                          "Portainer",
-                          "GraphQL",
-                        ].map((sug) => (
-                          <button
-                            key={sug}
-                            type="button"
-                            onClick={() => handleAddTech(sug)}
-                            disabled={techList.includes(sug)}
-                            className="px-2 py-0.5 rounded text-[11px] font-mono border border-white/5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
-                          >
-                            +{sug}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* MULTIMEDIA / CAROUSEL MANAGER */}
-                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label className="block text-xs font-mono font-semibold text-emerald-400">
-                            Galería Multimedia & Carrusel
-                          </label>
-                          <p className="text-[11px] text-slate-400 font-mono">
-                            Añade imágenes o videos para el carrusel y define cuál será la imagen principal de la tarjeta
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleAddMedia("image")}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
-                          >
-                            <ImageIcon size={13} className="text-emerald-400" />
-                            <span>+ Añadir Foto</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddMedia("video")}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
-                          >
-                            <Video size={13} className="text-cyan-400" />
-                            <span>+ Añadir Video</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {mediaList.length === 0 ? (
-                        <div className="p-6 rounded-lg border border-dashed border-white/10 bg-slate-950/40 text-center">
-                          <p className="text-xs font-mono text-slate-400">
-                            No hay elementos multimedia. Pulsa en &quot;+ Añadir Foto&quot; o &quot;+ Añadir Video&quot;.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {mediaList.map((mItem, mIdx) => (
-                            <div
-                              key={mIdx}
-                              className={`p-3 rounded-lg border transition-all flex flex-col md:flex-row md:items-center gap-3 ${
-                                mItem.is_primary
-                                  ? "border-emerald-500/40 bg-emerald-950/20"
-                                  : "border-white/10 bg-slate-950/60"
-                              }`}
-                            >
-                              {/* Preview thumbnail */}
-                              <div className="w-24 aspect-[16/9] rounded-md overflow-hidden bg-slate-900 border border-white/10 shrink-0 flex items-center justify-center">
-                                {mItem.url ? (
-                                  mItem.type === "video" ? (
-                                    <video src={mItem.url} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <img src={mItem.url} alt="Vista previa" className="w-full h-full object-cover" />
-                                  )
-                                ) : (
-                                  <span className="text-[10px] font-mono text-slate-500">Sin URL</span>
-                                )}
-                              </div>
-
-                              {/* Type toggle */}
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateMedia(mIdx, "type", "image")}
-                                  className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 ${
-                                    mItem.type === "image"
-                                      ? "bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30"
-                                      : "text-slate-400 hover:text-white"
-                                  }`}
-                                >
-                                  <ImageIcon size={11} />
-                                  <span>Foto</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateMedia(mIdx, "type", "video")}
-                                  className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 ${
-                                    mItem.type === "video"
-                                      ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30"
-                                      : "text-slate-400 hover:text-white"
-                                  }`}
-                                >
-                                  <Video size={11} />
-                                  <span>Video</span>
-                                </button>
-                              </div>
-
-                              {/* URL & Upload */}
-                              <div className="flex-1 flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  value={mItem.url || ""}
-                                  onChange={(e) => handleUpdateMedia(mIdx, "url", e.target.value)}
-                                  placeholder="URL (https://... o /uploads/...)"
-                                  className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
-                                />
-
-                                <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-all shrink-0">
-                                  <Upload size={12} />
-                                  <span>Subir</span>
-                                  <input
-                                    type="file"
-                                    accept={mItem.type === "video" ? "video/*" : "image/*"}
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        handleFileUpload(file, (url) => {
-                                          handleUpdateMedia(mIdx, "url", url);
-                                        });
-                                      }
-                                    }}
-                                  />
-                                </label>
-                              </div>
-
-                              {/* Primary Toggle & Delete */}
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateMedia(mIdx, "is_primary", true)}
-                                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all ${
-                                    mItem.is_primary
-                                      ? "bg-emerald-500 text-black font-semibold shadow-sm"
-                                      : "border border-white/10 bg-white/5 text-slate-400 hover:text-emerald-300 hover:border-emerald-500/30"
-                                  }`}
-                                  title="Marcar como imagen principal para la tarjeta inicial"
-                                >
-                                  <Star size={12} fill={mItem.is_primary ? "currentColor" : "none"} />
-                                  <span>{mItem.is_primary ? "Principal" : "Hacer Principal"}</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMedia(mIdx)}
-                                  className="p-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                  title="Eliminar elemento"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </div>
                           ))}
                         </div>
                       )}
-                    </div>
 
-                    {/* LINKS MANAGER */}
-                    <div className="p-4 rounded-xl border border-white/10 bg-slate-900/60 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label className="block text-xs font-mono font-semibold text-emerald-400">
-                            Enlaces del Proyecto (con icono y nombre)
-                          </label>
-                          <p className="text-[11px] text-slate-400 font-mono">
-                            Repositorio GitHub, demo en vivo, documentación, etc.
-                          </p>
-                        </div>
+                      {/* Bottom Actions: Edit in Modal & Delete */}
+                      <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
                         <button
                           type="button"
-                          onClick={handleAddLink}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-200 transition-all active:scale-95"
+                          onClick={() => handleOpenEditProject(proj)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
                         >
-                          <Plus size={13} />
-                          <span>+ Añadir Enlace</span>
+                          <Edit3 size={13} />
+                          <span>Editar</span>
                         </button>
-                      </div>
-
-                      {linksList.length === 0 ? (
-                        <div className="p-4 rounded-lg border border-dashed border-white/10 bg-slate-950/40 text-center">
-                          <p className="text-xs font-mono text-slate-400">
-                            No hay enlaces configurados. Pulsa en &quot;+ Añadir Enlace&quot;.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {linksList.map((link, lIdx) => (
-                            <div
-                              key={lIdx}
-                              className="p-3 rounded-lg border border-white/10 bg-slate-950/60 flex flex-col md:flex-row md:items-center gap-3"
-                            >
-                              {/* Icon Selector Button */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCurrentSocialIndex(null);
-                                  setProjectLinkTarget({ projectIdx: idx, linkIdx: lIdx });
-                                  setIconModalOpen(true);
-                                }}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:border-emerald-500/40 hover:bg-white/10 text-xs font-mono text-white shrink-0 transition-all"
-                                title="Cambiar icono del enlace"
-                              >
-                                <DynamicIcon name={link.icon || "external-link"} size={16} />
-                                <span className="text-slate-400 text-[11px]">{link.icon || "icono"}</span>
-                              </button>
-
-                              {/* Link Title */}
-                              <div className="w-full md:w-48">
-                                <input
-                                  type="text"
-                                  value={link.title}
-                                  onChange={(e) => handleUpdateLink(lIdx, "title", e.target.value)}
-                                  placeholder="Ej: Código fuente, Demo..."
-                                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
-                                />
-                              </div>
-
-                              {/* Link URL */}
-                              <div className="flex-1">
-                                <input
-                                  type="text"
-                                  value={link.url}
-                                  onChange={(e) => handleUpdateLink(lIdx, "url", e.target.value)}
-                                  placeholder="https://..."
-                                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
-                                />
-                              </div>
-
-                              {/* Delete button */}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLink(lIdx)}
-                                className="p-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
-                                title="Eliminar enlace"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card Actions Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                      <span className="text-xs font-mono text-slate-500">
-                        Orden #{proj.order_num || idx + 1}
-                      </span>
-
-                      <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => handleDeleteProject(proj.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors"
+                          className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                          title="Eliminar proyecto"
                         >
-                          <Trash2 size={13} />
-                          <span>Eliminar</span>
+                          <Trash2 size={14} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveProject(proj)}
-                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md active:scale-95"
-                        >
-                          <Save size={13} />
-                          <span>Guardar Proyecto</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: EDUCATION */}
-        {activeTab === "education" && (
-          <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white">Estudios & Certificaciones</h2>
-                <p className="text-xs text-slate-400 font-mono">
-                  Grados académicos, cursos y credenciales
-                </p>
-              </div>
-              <button
-                onClick={handleAddEducation}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-              >
-                <Plus size={15} />
-                <span>Añadir Registro</span>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {education.map((edu, idx) => (
-                <div
-                  key={edu.id}
-                  className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-4 shadow-xl"
-                >
-                  {/* Card Header: Position, Title & Reorder buttons */}
-                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold">
-                        #{idx + 1}
-                      </span>
-                      <span className="text-xs font-bold text-white truncate max-w-xs sm:max-w-md">
-                        {edu.degree || "Nuevo Título"} — <span className="text-slate-400 font-normal">{edu.institution || "Institución"}</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Mover:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveEducation(idx, idx - 1)}
-                        disabled={idx === 0}
-                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
-                        title="Subir posición (aparecerá antes)"
-                        aria-label="Subir posición"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveEducation(idx, idx + 1)}
-                        disabled={idx === education.length - 1}
-                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none text-slate-300 hover:text-white transition-colors cursor-pointer"
-                        title="Bajar posición (aparecerá después)"
-                        aria-label="Bajar posición"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Institución</label>
-                      <input
-                        type="text"
-                        value={edu.institution}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].institution = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Título / Grado</label>
-                      <input
-                        type="text"
-                        value={edu.degree}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].degree = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Campo de Estudio</label>
-                      <input
-                        type="text"
-                        value={edu.field_of_study || ""}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].field_of_study = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Orden numérico</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={edu.order_num ?? idx + 1}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].order_num = parseInt(e.target.value) || 0;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Inicio</label>
-                      <input
-                        type="text"
-                        value={edu.start_year || ""}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].start_year = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">Año Fin</label>
-                      <input
-                        type="text"
-                        value={edu.end_year || ""}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].end_year = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 md:col-span-4">
-                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                        Descripción detallada (se despliega con el botón &quot;&gt;&quot; en la web)
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="Detalla lo aprendido, proyectos realizados, competencias adquiridas o especialidad..."
-                        value={edu.description || ""}
-                        onChange={(e) => {
-                          const updated = [...education];
-                          updated[idx].description = e.target.value;
-                          setEducation(updated);
-                        }}
-                        className="w-full rounded-lg border border-white/10 bg-slate-900 p-3 text-xs text-white placeholder-slate-500 leading-relaxed"
-                      />
-                      <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                        Esta descripción se despliega interactivamente al pulsar el botón &quot;&gt;&quot; de cada estudio en el portafolio.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/5">
-                    <button
-                      onClick={() => handleDeleteEducation(edu.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors"
-                    >
-                      <Trash2 size={13} />
-                      <span>Eliminar</span>
-                    </button>
-                    <button
-                      onClick={() => handleSaveEducation(edu)}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-                    >
-                      <Save size={13} />
-                      <span>Guardar</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: KNOWLEDGE CATEGORIES & MARKDOWN BLOG */}
-        {activeTab === "knowledge" && (
-          <div className="mt-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <BookOpen size={20} className="text-emerald-400" />
-                  <span>Categorías de Conocimientos & Blog Técnico (05 / Conocimientos)</span>
-                </h2>
-                <p className="text-xs text-slate-400 font-mono mt-1">
-                  Gestiona las categorías que se despliegan en la sección 05, su contenido en Markdown y fotos adjuntas.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddKnowledgeCategory}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shrink-0 active:scale-95 cursor-pointer"
-              >
-                <Plus size={15} />
-                <span>Añadir Categoría</span>
-              </button>
-            </div>
-
-            {/* Featured categories in main page status banner */}
-            <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-              <div className="flex items-center gap-2 text-amber-300">
-                <Star size={16} className="text-amber-400 fill-amber-400 shrink-0" />
-                <span>
-                  <strong>
-                    {knowledgeCategories.filter((c) => c.featured === 1).length} de 3
-                  </strong>{" "}
-                  categorías seleccionadas para mostrar en la pantalla principal (05 / Conocimientos).
-                </span>
-              </div>
-              <span className="text-slate-400 text-[11px]">
-                Usa el botón «Mostrar en Portada» en cada tarjeta para elegir las 3 destacadas.
-              </span>
-            </div>
-
-            {knowledgeCategories.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-[#0d1322] p-12 text-center space-y-3">
-                <BookOpen size={36} className="mx-auto text-slate-600" />
-                <p className="text-sm font-mono text-slate-300">No hay categorías de conocimientos registradas.</p>
-                <p className="text-xs font-mono text-slate-500">Crea una nueva categoría para que aparezca en la sección 05 del portafolio.</p>
-                <button
-                  type="button"
-                  onClick={handleAddKnowledgeCategory}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 mt-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-                >
-                  <Plus size={14} />
-                  <span>Crear Primera Categoría</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {knowledgeCategories.map((cat, idx) => {
-                  const isPreview = !!markdownPreviews["know-" + cat.id];
-                  return (
-                    <div
-                      key={cat.id}
-                      className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 space-y-6 shadow-xl"
-                    >
-                      {/* Top Header: Order, Title and Quick Actions */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-                        <div className="flex items-center gap-2">
-                          {/* Order Buttons */}
-                          <div className="flex items-center gap-1 bg-slate-900 border border-white/10 rounded-lg p-1">
-                            <button
-                              type="button"
-                              disabled={idx === 0}
-                              onClick={() => handleMoveKnowledgeCategory(idx, "up")}
-                              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
-                              title="Subir posición"
-                            >
-                              <ArrowUp size={14} />
-                            </button>
-                            <span className="text-xs font-mono text-emerald-400 px-1 font-semibold">
-                              #{idx + 1}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={idx === knowledgeCategories.length - 1}
-                              onClick={() => handleMoveKnowledgeCategory(idx, "down")}
-                              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
-                              title="Bajar posición"
-                            >
-                              <ArrowDown size={14} />
-                            </button>
-                          </div>
-
-                          <span className="text-xs font-mono text-slate-400 hidden sm:inline">
-                            Categoría de Conocimientos
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Toggle Featured on Main Page button */}
-                          <button
-                            type="button"
-                            onClick={() => handleToggleFeaturedKnowledgeCategory(idx)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                              cat.featured === 1
-                                ? "bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold"
-                                : "bg-slate-900 border-white/10 text-slate-400 hover:text-white"
-                            }`}
-                            title={
-                              cat.featured === 1
-                                ? "Esta categoría se muestra en la sección 05 de la pantalla principal"
-                                : "Marcar para mostrar en la pantalla principal (máx 3)"
-                            }
-                          >
-                            <Star
-                              size={13}
-                              className={
-                                cat.featured === 1 ? "text-amber-400 fill-amber-400" : "text-slate-500"
-                              }
-                            />
-                            <span>{cat.featured === 1 ? "En Portada (05)" : "Mostrar en Portada"}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteKnowledgeCategory(cat.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 text-xs font-mono hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={13} />
-                            <span>Eliminar</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() => handleSaveKnowledgeCategory(cat)}
-                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                          >
-                            <Save size={13} />
-                            <span>{saving ? "Guardando..." : "Guardar"}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Main Fields: Nombre y Slug */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-mono text-slate-300">
-                            Nombre de la Categoría <span className="text-emerald-400">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={cat.name || ""}
-                            onChange={(e) => {
-                              const updated = [...knowledgeCategories];
-                              updated[idx].name = e.target.value;
-                              // Auto slug if isNew
-                              if (cat.isNew) {
-                                updated[idx].slug = e.target.value
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9]+/g, "-")
-                                  .replace(/^-|-$/g, "");
-                              }
-                              setKnowledgeCategories(updated);
-                            }}
-                            placeholder="Ej. Arquitectura Cloud & Docker"
-                            className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-semibold"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-mono text-slate-300">
-                            Slug (Identificador URL)
-                          </label>
-                          <input
-                            type="text"
-                            value={cat.slug || ""}
-                            onChange={(e) => {
-                              const updated = [...knowledgeCategories];
-                              updated[idx].slug = e.target.value;
-                              setKnowledgeCategories(updated);
-                            }}
-                            placeholder="arquitectura-cloud-docker"
-                            className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Markdown Content & Image Attachment */}
-                      <div className="space-y-3 pt-2 border-t border-white/5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <label className="block text-xs font-mono text-slate-300">
-                              Contenido (.md / Blog)
-                            </label>
-                            <span className="text-[10px] font-mono text-emerald-400/80 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                              Markdown habilitado
-                            </span>
-                          </div>
-
-                          {/* Edit / Preview Tabs */}
-                          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-white/5 text-xs font-mono">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMarkdownPreviews((prev) => ({
-                                  ...prev,
-                                  ["know-" + cat.id]: false,
-                                }));
-                              }}
-                              className={`px-3 py-1 rounded transition-colors ${
-                                !isPreview
-                                  ? "bg-emerald-500/20 text-emerald-300 font-semibold"
-                                  : "text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMarkdownPreviews((prev) => ({
-                                  ...prev,
-                                  ["know-" + cat.id]: true,
-                                }));
-                              }}
-                              className={`px-3 py-1 rounded transition-colors ${
-                                isPreview
-                                  ? "bg-emerald-500/20 text-emerald-300 font-semibold"
-                                  : "text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              Vista Previa
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Markdown Toolbar & Content Area */}
-                        {!isPreview ? (
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-slate-950/70 border border-white/5 text-xs font-mono">
-                              <button
-                                type="button"
-                                title="Título 1"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur}\n\n# Encabezado Principal\n` : `# Encabezado Principal\n`;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
-                              >
-                                # H1
-                              </button>
-                              <button
-                                type="button"
-                                title="Título 2"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur}\n\n## Subtítulo\n` : `## Subtítulo\n`;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                ## H2
-                              </button>
-                              <button
-                                type="button"
-                                title="Título 3"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur}\n\n### Sección\n` : `### Sección\n`;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                ### H3
-                              </button>
-                              <span className="w-px h-4 bg-white/10 mx-0.5" />
-                              <button
-                                type="button"
-                                title="Negrita"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur} **texto en negrita** ` : `**texto en negrita** `;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors font-bold"
-                              >
-                                B
-                              </button>
-                              <button
-                                type="button"
-                                title="Cursiva"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur} *texto en cursiva* ` : `*texto en cursiva* `;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors italic"
-                              >
-                                I
-                              </button>
-                              <button
-                                type="button"
-                                title="Lista"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur}\n- Elemento 1\n- Elemento 2\n` : `- Elemento 1\n- Elemento 2\n`;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                • Lista
-                              </button>
-                              <button
-                                type="button"
-                                title="Código en línea"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur} \`código\` ` : `\`código\` `;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                `código`
-                              </button>
-                              <button
-                                type="button"
-                                title="Bloque de código"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur}\n\`\`\`typescript\n// Tu código aquí\n\`\`\`\n` : `\`\`\`typescript\n// Tu código aquí\n\`\`\`\n`;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                ```bloque```
-                              </button>
-                              <button
-                                type="button"
-                                title="Enlace"
-                                onClick={() => {
-                                  const updated = [...knowledgeCategories];
-                                  const cur = updated[idx].content || "";
-                                  updated[idx].content = cur ? `${cur} [Texto del enlace](https://...) ` : `[Texto del enlace](https://...) `;
-                                  setKnowledgeCategories(updated);
-                                }}
-                                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/5 transition-colors"
-                              >
-                                Enlace
-                              </button>
-                              <span className="w-px h-4 bg-white/10 mx-0.5" />
-
-                              {/* Button to attach photos / images */}
-                              <label
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer"
-                                title="Adjuntar foto o imagen en el texto del .md"
-                              >
-                                <Upload size={13} />
-                                <span>Adjuntar Foto / Imagen</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleAttachKnowledgeImage(idx, file);
-                                      e.target.value = "";
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-
-                            <textarea
-                              rows={12}
-                              value={cat.content || ""}
-                              onChange={(e) => {
-                                const updated = [...knowledgeCategories];
-                                updated[idx].content = e.target.value;
-                                setKnowledgeCategories(updated);
-                              }}
-                              placeholder="Escribe el artículo o notas en formato Markdown:
-# Mi Guía Técnica
-Explicación detallada de la arquitectura, decisiones de diseño y lecciones aprendidas.
-
-![Diagrama](/uploads/ejemplo.webp)
-
-```bash
-docker compose up -d
-```"
-                              className="w-full rounded-xl border border-white/10 bg-slate-900 p-4 text-xs text-white leading-relaxed focus:outline-none focus:border-emerald-500/50 font-mono"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-full min-h-[220px] max-h-[500px] overflow-y-auto rounded-xl border border-white/10 bg-slate-950 p-6 text-sm text-white">
-                            {cat.content && cat.content.trim().length > 0 ? (
-                              <MarkdownRenderer content={cat.content} />
-                            ) : (
-                              <p className="text-slate-500 italic font-mono text-xs">
-                                No hay contenido Markdown redactado para previsualizar.
-                              </p>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center text-slate-400 font-mono text-xs">
+                No hay proyectos registrados. Pulsa &quot;Nuevo Proyecto&quot; para crear uno.
+              </div>
             )}
           </div>
         )}
 
-        {/* TAB 6: SOCIAL LINKS & CDN ICON SEARCH */}
-        {activeTab === "social" && (
+        {/* ========================================================= */}
+        {/* TAB 3: WORK EXPERIENCE DASHBOARD */}
+        {/* ========================================================= */}
+        {activeTab === "experience" && (
           <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Redes y Enlaces Digitales</h2>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>Experiencia Laboral</span>
+                  <span className="text-xs font-mono text-slate-500 font-normal">
+                    [{experiences.length} registradas]
+                  </span>
+                </h2>
                 <p className="text-xs text-slate-400 font-mono">
-                  Enlaza tu GitHub, LinkedIn y redes con iconos CDN oficiales
+                  Trayectorias profesionales, roles, periodos y habilidades demostradas.
                 </p>
               </div>
               <button
-                onClick={handleAddSocial}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
+                type="button"
+                onClick={handleOpenNewExperience}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
               >
-                <Plus size={15} />
-                <span>Añadir Enlace</span>
+                <Plus size={16} />
+                <span>Nueva Experiencia</span>
               </button>
             </div>
 
-            <div className="space-y-4">
-              {socials.map((soc, idx) => (
-                <div
-                  key={soc.id}
-                  className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-4 w-full md:w-auto">
-                    {/* CDN Icon Preview & Change Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentSocialIndex(idx);
-                        setIconModalOpen(true);
-                      }}
-                      className="p-3 rounded-xl bg-black/50 border border-white/10 hover:border-emerald-500/50 flex items-center justify-center group relative shrink-0 transition-colors"
-                      title="Cambiar icono desde catálogo CDN"
+            {experiences.length > 0 ? (
+              <div className="space-y-4">
+                {experiences.map((exp, idx) => {
+                  let parsedSkills: string[] = [];
+                  try {
+                    parsedSkills = JSON.parse(exp.skills || "[]");
+                  } catch {
+                    parsedSkills = [];
+                  }
+
+                  return (
+                    <div
+                      key={exp.id}
+                      className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/30 transition-all shadow-md group"
                     >
-                      <DynamicIcon name={soc.icon_name} size={24} />
-                      <span className="absolute -bottom-2 text-[9px] font-mono text-emerald-400 bg-black/80 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        Buscar
-                      </span>
-                    </button>
-
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-[280px]">
-                      <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">Plataforma</label>
-                        <input
-                          type="text"
-                          value={soc.platform}
-                          onChange={(e) => {
-                            const updated = [...socials];
-                            updated[idx].platform = e.target.value;
-                            setSocials(updated);
-                          }}
-                          className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                          Icono CDN (Slug o Selector)
-                        </label>
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            value={soc.icon_name || ""}
-                            onChange={(e) => {
-                              const updated = [...socials];
-                              updated[idx].icon_name = e.target.value;
-                              setSocials(updated);
-                            }}
-                            className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCurrentSocialIndex(idx);
-                              setIconModalOpen(true);
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono hover:bg-emerald-500/20"
-                          >
-                            CDN
-                          </button>
+                      <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <div className="space-y-1 min-w-0">
+                          <h4 className="text-base font-bold text-white truncate">
+                            {exp.role} —{" "}
+                            <span className="text-emerald-300 font-medium">{exp.company}</span>
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400">
+                            <span>
+                              🗓 {exp.start_date} – {exp.is_current ? "Presente" : exp.end_date}
+                            </span>
+                            {exp.location && <span>📍 {exp.location}</span>}
+                          </div>
+                          {parsedSkills.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] font-mono text-slate-400">
+                              {parsedSkills.slice(0, 5).map((s, si) => (
+                                <span
+                                  key={si}
+                                  className="px-2 py-0.5 rounded bg-slate-900 border border-white/5"
+                                >
+                                  #{s}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <div className="flex items-center gap-1 mr-2">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveExperience(idx, idx - 1)}
+                            disabled={idx === 0}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                            title="Subir"
+                          >
+                            <ArrowUp size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveExperience(idx, idx + 1)}
+                            disabled={idx === experiences.length - 1}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                            title="Bajar"
+                          >
+                            <ArrowDown size={13} />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditExperience(exp)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                        >
+                          <Edit3 size={13} />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteExperience(exp.id)}
+                          className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex-1 w-full md:w-auto">
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">URL Enlace</label>
-                    <input
-                      type="text"
-                      value={soc.url}
-                      onChange={(e) => {
-                        const updated = [...socials];
-                        updated[idx].url = e.target.value;
-                        setSocials(updated);
-                      }}
-                      className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => handleDeleteSocial(soc.id)}
-                      className="p-2 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleSaveSocial(soc)}
-                      className="flex items-center gap-1 px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all"
-                    >
-                      <Save size={13} />
-                      <span>Guardar</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center text-slate-400 font-mono text-xs">
+                No hay experiencias registradas. Pulsa &quot;Nueva Experiencia&quot; para crear una.
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 6: SECURITY & 2FA */}
+        {/* ========================================================= */}
+        {/* TAB 4: EDUCATION DASHBOARD */}
+        {/* ========================================================= */}
+        {activeTab === "education" && (
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>Estudios & Certificaciones</span>
+                  <span className="text-xs font-mono text-slate-500 font-normal">
+                    [{education.length} registradas]
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 font-mono">
+                  Títulos académicos, certificaciones técnicas e instituciones.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenNewEducation}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Nueva Formación</span>
+              </button>
+            </div>
+
+            {education.length > 0 ? (
+              <div className="space-y-4">
+                {education.map((edu, idx) => (
+                  <div
+                    key={edu.id}
+                    className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/30 transition-all shadow-md group"
+                  >
+                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold shrink-0">
+                        #{idx + 1}
+                      </span>
+                      <div className="space-y-1 min-w-0">
+                        <h4 className="text-base font-bold text-white truncate">
+                          {edu.degree} —{" "}
+                          <span className="text-emerald-300 font-medium">{edu.institution}</span>
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400">
+                          <span>
+                            🗓 {edu.start_year} – {edu.end_year}
+                          </span>
+                          {edu.field_of_study && <span>🎓 {edu.field_of_study}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <div className="flex items-center gap-1 mr-2">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveEducation(idx, idx - 1)}
+                          disabled={idx === 0}
+                          className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                          title="Subir"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveEducation(idx, idx + 1)}
+                          disabled={idx === education.length - 1}
+                          className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                          title="Bajar"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditEducation(edu)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEducation(edu.id)}
+                        className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center text-slate-400 font-mono text-xs">
+                No hay registros de formación. Pulsa &quot;Nueva Formación&quot; para crear uno.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 5: KNOWLEDGE CATEGORIES DASHBOARD */}
+        {/* ========================================================= */}
+        {activeTab === "knowledge" && (
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>Conocimientos</span>
+                  <span className="text-xs font-mono text-slate-500 font-normal">
+                    [{knowledgeCategories.length} artículos]
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 font-mono">
+                  Categorías y artículos con editor Markdown para la sección 05 / Conocimientos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenNewKnowledge}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Nueva Categoría</span>
+              </button>
+            </div>
+
+            {knowledgeCategories.length > 0 ? (
+              <div className="space-y-4">
+                {knowledgeCategories.map((cat, idx) => (
+                  <div
+                    key={cat.id}
+                    className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/30 transition-all shadow-md group"
+                  >
+                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold shrink-0">
+                        #{idx + 1}
+                      </span>
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-white truncate">{cat.name}</h4>
+                          {cat.featured === 1 && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                              ★ Portada
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-mono text-slate-400 truncate">
+                          slug: {cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <div className="flex items-center gap-1 mr-2">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveKnowledge(idx, "up")}
+                          disabled={idx === 0}
+                          className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                          title="Subir"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveKnowledge(idx, "down")}
+                          disabled={idx === knowledgeCategories.length - 1}
+                          className="p-1.5 rounded-lg border border-white/10 bg-slate-900 disabled:opacity-20 text-slate-400 hover:text-white cursor-pointer"
+                          title="Bajar"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditKnowledge(cat)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteKnowledge(cat.id)}
+                        className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center text-slate-400 font-mono text-xs">
+                No hay categorías de conocimientos. Pulsa &quot;Nueva Categoría&quot; para crear una.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 6: SOCIAL LINKS DASHBOARD */}
+        {/* ========================================================= */}
+        {activeTab === "social" && (
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>Redes Sociales & Enlaces</span>
+                  <span className="text-xs font-mono text-slate-500 font-normal">
+                    [{socials.length} enlaces]
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 font-mono">
+                  Enlaces del pie de página con selector de iconos SVG oficiales.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenNewSocial}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>Nuevo Enlace</span>
+              </button>
+            </div>
+
+            {socials.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {socials.map((soc) => (
+                  <div
+                    key={soc.id}
+                    className="rounded-2xl border border-white/10 bg-[#0d1322] p-5 flex items-center justify-between gap-3 hover:border-emerald-500/30 transition-all shadow-md group"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-emerald-400 shrink-0">
+                        <DynamicIcon name={soc.icon_name || "globe"} size={20} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-bold text-white truncate">{soc.platform}</h4>
+                        <p className="text-[11px] font-mono text-slate-400 truncate">{soc.url}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditSocial(soc)}
+                        className="p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition-colors cursor-pointer"
+                        title="Editar enlace"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSocial(soc.id)}
+                        className="p-2 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/30 p-12 text-center text-slate-400 font-mono text-xs">
+                No hay redes configuradas. Pulsa &quot;Nuevo Enlace&quot; para añadir una.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 7: SECURITY & 2FA */}
+        {/* ========================================================= */}
         {activeTab === "security" && (
           <div className="mt-8 space-y-6">
             <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-6 shadow-xl">
               <div className="pb-4 border-b border-white/10">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <KeyRound size={20} className="text-emerald-400" />
-                  <span>Configuración de Seguridad & 2FA (Authenticator)</span>
+                  <span>Seguridad & Autenticación de Dos Factores (2FA)</span>
                 </h2>
                 <p className="text-xs text-slate-400 font-mono mt-1">
-                  Protección de acceso mediante código de un solo uso TOTP (Google Authenticator, Authy, etc.)
+                  Protección de acceso mediante código TOTP (Google Authenticator, Authy, 1Password).
                 </p>
               </div>
 
@@ -2770,7 +1593,7 @@ docker compose up -d
                     <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-mono leading-relaxed">
                       Estado: <span className="font-bold">2FA ACTIVO</span>
                       <br />
-                      Cada vez que inicies sesión en Portainer, tras introducir tu usuario y contraseña se solicitará el código de 6 dígitos de tu app Authenticator.
+                      Cada inicio de sesión solicita el código temporal de 6 dígitos de tu app Authenticator.
                     </div>
 
                     <div className="space-y-2">
@@ -2780,20 +1603,25 @@ docker compose up -d
                       <div className="p-3 rounded-lg bg-black/60 border border-white/10 font-mono text-xs text-emerald-400 select-all break-all">
                         {twoFactorData.secret}
                       </div>
-                      <p className="text-[11px] text-slate-500">
-                        Puedes añadirla manualmente introduciendo esta clave o escaneando el código QR.
-                      </p>
                     </div>
 
                     <div className="space-y-2 pt-2">
                       <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-                        Variables de Entorno en Portainer:
+                        Variables de Entorno en Docker / Portainer:
                       </h4>
                       <div className="bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-xs text-slate-300 space-y-1">
-                        <div><span className="text-emerald-400">ADMIN_USER</span>=admin</div>
-                        <div><span className="text-emerald-400">ADMIN_PASSWORD</span>=tu_password_seguro</div>
-                        <div><span className="text-emerald-400">AUTH_SECRET</span>=secreto_de_sesion_aleatorio</div>
-                        <div><span className="text-emerald-400">TOTP_SECRET</span>={twoFactorData.secret}</div>
+                        <div>
+                          <span className="text-emerald-400">ADMIN_USER</span>=admin
+                        </div>
+                        <div>
+                          <span className="text-emerald-400">ADMIN_PASSWORD</span>=tu_password
+                        </div>
+                        <div>
+                          <span className="text-emerald-400">AUTH_SECRET</span>=secreto_aleatorio
+                        </div>
+                        <div>
+                          <span className="text-emerald-400">TOTP_SECRET</span>={twoFactorData.secret}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2818,9 +1646,6 @@ docker compose up -d
                     <p className="text-xs font-mono text-slate-300 font-semibold">
                       Escanea con Google Authenticator / Authy
                     </p>
-                    <p className="text-[11px] text-slate-500 max-w-xs">
-                      Abre tu aplicación Authenticator en el teléfono, añade una nueva cuenta y apunta con la cámara a este código.
-                    </p>
                   </div>
                 </div>
               ) : (
@@ -2828,130 +1653,1519 @@ docker compose up -d
               )}
             </div>
 
-            {/* SECCIÓN MIGRACIÓN Y COPIA DE SEGURIDAD */}
-            <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-6 shadow-xl">
-              <div className="pb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Database size={20} className="text-emerald-400" />
-                    <span>Migración & Copias de Seguridad (JSON)</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 font-mono mt-1">
-                    Exporta o importa el estado completo del portafolio para migrar entre servidores, Docker, Portainer o realizar backups.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 font-mono text-xs">
-                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
-                    {projects.length} proyectos
-                  </span>
-                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
-                    {experiences.length} exp.
-                  </span>
-                  <span className="px-2.5 py-1 rounded bg-slate-900 border border-white/10 text-slate-300">
-                    {education.length} form.
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Opción Exportar */}
-                <div className="p-5 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-white font-semibold text-sm">
-                      <Download size={16} className="text-emerald-400" />
-                      <span>Exportar Portafolio Completo</span>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-mono">
-                      Genera un archivo JSON con tu perfil, historia personal, experiencias, proyectos (con multimedia, enlaces y Markdown), formación e iconos.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleExportJson}
-                    disabled={exporting}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-emerald-300 text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Download size={14} className={exporting ? "animate-bounce" : ""} />
-                    <span>{exporting ? "Generando JSON..." : "Descargar Backup JSON"}</span>
-                  </button>
-                </div>
-
-                {/* Opción Importar */}
-                <div className="p-5 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-white font-semibold text-sm">
-                      <UploadCloud size={16} className="text-emerald-400" />
-                      <span>Importar / Restaurar Portafolio</span>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-mono">
-                      Carga un archivo JSON previamente exportado. La base de datos SQLite se actualizará atómicamente con los nuevos datos.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={importing}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-mono font-bold transition-all shadow-sm shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer"
-                  >
-                    <UploadCloud size={14} className={importing ? "animate-pulse" : ""} />
-                    <span>{importing ? "Importando y migrando..." : "Seleccionar Archivo JSON"}</span>
-                  </button>
-                </div>
+            {/* Quick Backup Section */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d1322] p-6 sm:p-8 space-y-4 shadow-xl">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Database size={18} className="text-emerald-400" />
+                <span>Copias de Seguridad Rápidas</span>
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
+                Puedes exportar un archivo JSON con todos los datos o importar una copia para restaurar el contenido.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleExportJson}
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-xs font-mono text-white transition-all cursor-pointer"
+                >
+                  <Download size={14} className="text-emerald-400" />
+                  <span>Descargar Backup JSON</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={importing}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-all cursor-pointer"
+                >
+                  <UploadCloud size={14} />
+                  <span>Restaurar Backup JSON</span>
+                </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
 
-      {/* CDN Icon Picker Modal */}
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 1: PERFIL & HISTORIA */}
+      {/* ========================================================================= */}
+      {isProfileModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsProfileModalOpen(false);
+          }}
+        >
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <User size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">Editar Perfil & Historia</h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    Modifica tus datos y biografía narrativa
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isProfileDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Nombre Completo</label>
+                  <input
+                    type="text"
+                    value={profileForm.name || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Título Profesional</label>
+                  <input
+                    type="text"
+                    value={profileForm.title || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, title: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={profileForm.email || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Ubicación</label>
+                  <input
+                    type="text"
+                    value={profileForm.location || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">Badge de Estado</label>
+                  <input
+                    type="text"
+                    value={profileForm.status_badge || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, status_badge: e.target.value })}
+                    placeholder="🟢 Disponible para nuevos proyectos"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">Bio Breve (Hero)</label>
+                  <textarea
+                    rows={2}
+                    value={profileForm.short_bio || ""}
+                    onChange={(e) => setProfileForm({ ...profileForm, short_bio: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Avatar */}
+                <div className="space-y-2 md:col-span-2 p-4 rounded-xl border border-white/5 bg-slate-900/60">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Foto de Perfil / Avatar (URL o Subir Archivo local)
+                  </label>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    {profileForm.avatar_url && (
+                      <img
+                        src={profileForm.avatar_url}
+                        alt="Avatar"
+                        className="w-12 h-12 rounded-xl object-cover border border-emerald-500/40 shrink-0"
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={profileForm.avatar_url || ""}
+                      onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
+                      placeholder="https://... o /uploads/..."
+                      className="flex-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                    <label className="cursor-pointer flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-colors shrink-0">
+                      <Upload size={13} />
+                      <span>Subir Foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, (url) =>
+                              setProfileForm((prev) => ({ ...prev, avatar_url: url }))
+                            );
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Story */}
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Mi Historia Completa (Markdown soportado)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewStory(!previewStory)}
+                      className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      <Eye size={12} />
+                      <span>{previewStory ? "Editar texto" : "Vista previa"}</span>
+                    </button>
+                  </div>
+
+                  {previewStory ? (
+                    <div className="w-full min-h-[160px] max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-slate-900/50 p-4 text-sm text-slate-200">
+                      <MarkdownRenderer content={profileForm.about_story || ""} />
+                    </div>
+                  ) : (
+                    <textarea
+                      rows={7}
+                      value={profileForm.about_story || ""}
+                      onChange={(e) => setProfileForm({ ...profileForm, about_story: e.target.value })}
+                      placeholder="Escribe tu historia profesional..."
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 p-3.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-sans"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isProfileDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isProfileDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 2: PROYECTO */}
+      {/* ========================================================================= */}
+      {editingProject && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingProject(null);
+          }}
+        >
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <FolderGit2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
+                    {editingProject.isNew ? "Nuevo Proyecto" : `Editar: ${editingProject.title}`}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    Información técnica, galería y enlaces
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isProjectDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveProjectModal}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">Título del Proyecto</label>
+                  <input
+                    type="text"
+                    value={editingProject.title}
+                    onChange={(e) =>
+                      setEditingProject({ ...editingProject, title: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Estado del Proyecto</label>
+                  <select
+                    value={editingProject.status || "Producción"}
+                    onChange={(e) =>
+                      setEditingProject({ ...editingProject, status: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono cursor-pointer"
+                  >
+                    <option value="Producción">Producción</option>
+                    <option value="En desarrollo">En desarrollo</option>
+                    <option value="Finalizado">Finalizado</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5 flex flex-col justify-end">
+                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-white/10 bg-slate-900/60 text-xs font-mono text-slate-300 hover:border-emerald-500/30">
+                    <input
+                      type="checkbox"
+                      checked={editingProject.featured === 1}
+                      onChange={(e) =>
+                        setEditingProject({
+                          ...editingProject,
+                          featured: e.target.checked ? 1 : 0,
+                        })
+                      }
+                      className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
+                    />
+                    <span>Destacar en Portada (★ Destacado)</span>
+                  </label>
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Descripción Breve (Resumen para la tarjeta)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editingProject.description}
+                    onChange={(e) =>
+                      setEditingProject({ ...editingProject, description: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Tech Stack Tags Manager */}
+                <div className="space-y-2 md:col-span-2 p-4 rounded-xl border border-white/5 bg-slate-900/60">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Tecnologías & Arquitectura (Etiquetas)
+                  </label>
+                  {(() => {
+                    let tags: string[] = [];
+                    try {
+                      tags = JSON.parse(editingProject.tech_stack || "[]");
+                    } catch {
+                      tags = [];
+                    }
+
+                    return (
+                      <div className="space-y-2.5">
+                        <div className="flex flex-wrap gap-2">
+                          {tags.map((tag, ti) => (
+                            <span
+                              key={ti}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-mono text-xs"
+                            >
+                              <span>#{tag}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const filtered = tags.filter((_, idx) => idx !== ti);
+                                  setEditingProject({
+                                    ...editingProject,
+                                    tech_stack: JSON.stringify(filtered),
+                                  });
+                                }}
+                                className="text-slate-400 hover:text-rose-300 cursor-pointer"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="Nueva tecnología (ej. Docker, Redis)..."
+                            value={newProjectTech}
+                            onChange={(e) => setNewProjectTech(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && newProjectTech.trim()) {
+                                e.preventDefault();
+                                const updatedTags = [...tags, newProjectTech.trim()];
+                                setEditingProject({
+                                  ...editingProject,
+                                  tech_stack: JSON.stringify(updatedTags),
+                                });
+                                setNewProjectTech("");
+                              }
+                            }}
+                            className="flex-1 rounded-xl border border-white/10 bg-slate-900 px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!newProjectTech.trim()) return;
+                              const updatedTags = [...tags, newProjectTech.trim()];
+                              setEditingProject({
+                                ...editingProject,
+                                tech_stack: JSON.stringify(updatedTags),
+                              });
+                              setNewProjectTech("");
+                            }}
+                            className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                          >
+                            + Añadir
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Media Manager (Photos / Videos) */}
+                <div className="space-y-3 md:col-span-2 p-4 rounded-xl border border-white/5 bg-slate-900/60">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Galería Multimedia (Imágenes y Videos)
+                    </label>
+                    <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-colors">
+                      <Upload size={12} />
+                      <span>Subir archivo</span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, (url) => {
+                              let currentMedia: MediaItem[] = [];
+                              try {
+                                currentMedia = JSON.parse(editingProject.media || "[]");
+                              } catch {
+                                currentMedia = [];
+                              }
+                              const isVideo = file.type.startsWith("video/");
+                              const newItem: MediaItem = {
+                                type: isVideo ? "video" : "image",
+                                url,
+                                is_primary: currentMedia.length === 0,
+                              };
+                              setEditingProject({
+                                ...editingProject,
+                                media: JSON.stringify([...currentMedia, newItem]),
+                              });
+                            });
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {(() => {
+                    let mediaList: MediaItem[] = [];
+                    try {
+                      mediaList = JSON.parse(editingProject.media || "[]");
+                    } catch {
+                      mediaList = [];
+                    }
+
+                    if (mediaList.length === 0) {
+                      return (
+                        <p className="text-xs font-mono text-slate-500 py-2">
+                          No hay elementos multimedia adjuntos.
+                        </p>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                        {mediaList.map((m, mi) => (
+                          <div
+                            key={mi}
+                            className="relative group rounded-xl overflow-hidden border border-white/10 bg-slate-950 aspect-video flex items-center justify-center"
+                          >
+                            {m.type === "video" ? (
+                              <div className="flex flex-col items-center justify-center text-cyan-400 gap-1">
+                                <Video size={20} />
+                                <span className="text-[10px] font-mono">Video</span>
+                              </div>
+                            ) : (
+                              <img
+                                src={m.url}
+                                alt="Media"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+
+                            {m.is_primary && (
+                              <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-emerald-500 text-black text-[9px] font-mono font-bold">
+                                Principal
+                              </span>
+                            )}
+
+                            <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              {!m.is_primary && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = mediaList.map((it, idx) => ({
+                                      ...it,
+                                      is_primary: idx === mi,
+                                    }));
+                                    setEditingProject({
+                                      ...editingProject,
+                                      media: JSON.stringify(updated),
+                                    });
+                                  }}
+                                  className="px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono cursor-pointer"
+                                >
+                                  Principal
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = mediaList.filter((_, idx) => idx !== mi);
+                                  setEditingProject({
+                                    ...editingProject,
+                                    media: JSON.stringify(updated),
+                                  });
+                                }}
+                                className="p-1.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 cursor-pointer"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Links Manager */}
+                <div className="space-y-3 md:col-span-2 p-4 rounded-xl border border-white/5 bg-slate-900/60">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Enlaces Externos (Demo, Repositorio, Docs)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let curLinks: LinkItem[] = [];
+                        try {
+                          curLinks = JSON.parse(editingProject.links || "[]");
+                        } catch {
+                          curLinks = [];
+                        }
+                        const newLink: LinkItem = {
+                          title: "Nuevo Enlace",
+                          url: "https://",
+                          icon: "external-link",
+                        };
+                        setEditingProject({
+                          ...editingProject,
+                          links: JSON.stringify([...curLinks, newLink]),
+                        });
+                      }}
+                      className="px-3 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                    >
+                      + Añadir Enlace
+                    </button>
+                  </div>
+
+                  {(() => {
+                    let linkList: LinkItem[] = [];
+                    try {
+                      linkList = JSON.parse(editingProject.links || "[]");
+                    } catch {
+                      linkList = [];
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        {linkList.map((link, li) => (
+                          <div
+                            key={li}
+                            className="flex flex-col sm:flex-row items-center gap-2 p-2.5 rounded-xl border border-white/5 bg-slate-900"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIconTarget({ linkIdx: li });
+                                setIconModalOpen(true);
+                              }}
+                              className="p-2 rounded-lg border border-white/10 bg-slate-950 text-emerald-400 hover:border-emerald-500/40 transition-colors cursor-pointer shrink-0"
+                              title="Seleccionar icono"
+                            >
+                              <DynamicIcon name={link.icon || "external-link"} size={16} />
+                            </button>
+
+                            <input
+                              type="text"
+                              value={link.title}
+                              placeholder="Título (ej. Código fuente)"
+                              onChange={(e) => {
+                                const updated = [...linkList];
+                                updated[li].title = e.target.value;
+                                setEditingProject({
+                                  ...editingProject,
+                                  links: JSON.stringify(updated),
+                                });
+                              }}
+                              className="w-full sm:w-1/3 rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                            />
+
+                            <input
+                              type="text"
+                              value={link.url}
+                              placeholder="https://..."
+                              onChange={(e) => {
+                                const updated = [...linkList];
+                                updated[li].url = e.target.value;
+                                setEditingProject({
+                                  ...editingProject,
+                                  links: JSON.stringify(updated),
+                                });
+                              }}
+                              className="w-full sm:flex-1 rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = linkList.filter((_, idx) => idx !== li);
+                                setEditingProject({
+                                  ...editingProject,
+                                  links: JSON.stringify(updated),
+                                });
+                              }}
+                              className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 transition-colors cursor-pointer shrink-0"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Long Description Markdown */}
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Descripción Detallada (Markdown soportado)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewProjectDesc(!previewProjectDesc)}
+                      className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      <Eye size={12} />
+                      <span>{previewProjectDesc ? "Editar texto" : "Vista previa"}</span>
+                    </button>
+                  </div>
+
+                  {previewProjectDesc ? (
+                    <div className="w-full min-h-[160px] max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-slate-900/50 p-4 text-sm text-slate-200">
+                      <MarkdownRenderer content={editingProject.long_description || ""} />
+                    </div>
+                  ) : (
+                    <textarea
+                      rows={6}
+                      value={editingProject.long_description || ""}
+                      onChange={(e) =>
+                        setEditingProject({ ...editingProject, long_description: e.target.value })
+                      }
+                      placeholder="Explica la arquitectura, retos resueltos y despliegue del proyecto..."
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 p-3.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-sans"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingProject(null)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isProjectDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isProjectDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveProjectModal}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 3: EXPERIENCIA LABORAL */}
+      {/* ========================================================================= */}
+      {editingExperience && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingExperience(null);
+          }}
+        >
+          <div className="relative w-full max-w-2xl max-h-[90vh] bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Briefcase size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
+                    {editingExperience.isNew ? "Nueva Experiencia" : `Editar: ${editingExperience.role}`}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    {editingExperience.company || "Empresa"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isExperienceDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveExperienceModal}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingExperience(null)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Empresa</label>
+                  <input
+                    type="text"
+                    value={editingExperience.company}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, company: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Puesto / Rol</label>
+                  <input
+                    type="text"
+                    value={editingExperience.role}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, role: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Fecha de Inicio</label>
+                  <input
+                    type="text"
+                    placeholder="2022 o Ene 2022"
+                    value={editingExperience.start_date}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, start_date: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Fecha de Fin</label>
+                  <input
+                    type="text"
+                    placeholder="2024 o Presente"
+                    disabled={editingExperience.is_current === 1}
+                    value={editingExperience.is_current ? "Presente" : editingExperience.end_date}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, end_date: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl border border-white/10 bg-slate-900/60 text-xs font-mono text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={editingExperience.is_current === 1}
+                      onChange={(e) =>
+                        setEditingExperience({
+                          ...editingExperience,
+                          is_current: e.target.checked ? 1 : 0,
+                          end_date: e.target.checked ? "Presente" : "",
+                        })
+                      }
+                      className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
+                    />
+                    <span>Trabajo actualmente aquí (is_current)</span>
+                  </label>
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">Ubicación</label>
+                  <input
+                    type="text"
+                    value={editingExperience.location || ""}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, location: e.target.value })
+                    }
+                    placeholder="Remoto / Madrid, España"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Descripción de Responsabilidades
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editingExperience.description}
+                    onChange={(e) =>
+                      setEditingExperience({ ...editingExperience, description: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-sans"
+                  />
+                </div>
+
+                {/* Skills manager */}
+                <div className="space-y-2 sm:col-span-2 p-3.5 rounded-xl border border-white/5 bg-slate-900/60">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Tecnologías & Skills
+                  </label>
+                  {(() => {
+                    let skillsList: string[] = [];
+                    try {
+                      skillsList = JSON.parse(editingExperience.skills || "[]");
+                    } catch {
+                      skillsList = [];
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          {skillsList.map((sk, ski) => (
+                            <span
+                              key={ski}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-mono"
+                            >
+                              <span>#{sk}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const filtered = skillsList.filter((_, idx) => idx !== ski);
+                                  setEditingExperience({
+                                    ...editingExperience,
+                                    skills: JSON.stringify(filtered),
+                                  });
+                                }}
+                                className="text-slate-400 hover:text-rose-300 cursor-pointer"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="Añadir habilidad (ej. Kubernetes)..."
+                            value={newExpSkill}
+                            onChange={(e) => setNewExpSkill(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && newExpSkill.trim()) {
+                                e.preventDefault();
+                                const updated = [...skillsList, newExpSkill.trim()];
+                                setEditingExperience({
+                                  ...editingExperience,
+                                  skills: JSON.stringify(updated),
+                                });
+                                setNewExpSkill("");
+                              }
+                            }}
+                            className="flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!newExpSkill.trim()) return;
+                              const updated = [...skillsList, newExpSkill.trim()];
+                              setEditingExperience({
+                                ...editingExperience,
+                                skills: JSON.stringify(updated),
+                              });
+                              setNewExpSkill("");
+                            }}
+                            className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-emerald-500/20 text-xs font-mono text-emerald-300 transition-colors cursor-pointer"
+                          >
+                            + Añadir
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingExperience(null)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isExperienceDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isExperienceDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveExperienceModal}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 4: FORMACIÓN / EDUCACIÓN */}
+      {/* ========================================================================= */}
+      {editingEducation && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingEducation(null);
+          }}
+        >
+          <div className="relative w-full max-w-2xl max-h-[90vh] bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <GraduationCap size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
+                    {editingEducation.isNew ? "Nueva Formación" : `Editar: ${editingEducation.degree}`}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    {editingEducation.institution || "Institución"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isEducationDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveEducationModal}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingEducation(null)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Institución Educativa
+                  </label>
+                  <input
+                    type="text"
+                    value={editingEducation.institution}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, institution: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Título o Certificación
+                  </label>
+                  <input
+                    type="text"
+                    value={editingEducation.degree}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, degree: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Campo de Estudio / Especialidad
+                  </label>
+                  <input
+                    type="text"
+                    value={editingEducation.field_of_study || ""}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, field_of_study: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Año de Inicio</label>
+                  <input
+                    type="text"
+                    value={editingEducation.start_year}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, start_year: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Año de Fin</label>
+                  <input
+                    type="text"
+                    value={editingEducation.end_year}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, end_year: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Detalles / Descripción Adicional
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editingEducation.description || ""}
+                    onChange={(e) =>
+                      setEditingEducation({ ...editingEducation, description: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-sans"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingEducation(null)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isEducationDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isEducationDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveEducationModal}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 5: CONOCIMIENTOS (CATEGORÍA / ARTÍCULO) */}
+      {/* ========================================================================= */}
+      {editingKnowledge && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingKnowledge(null);
+          }}
+        >
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <BookOpen size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
+                    {editingKnowledge.isNew ? "Nueva Categoría" : `Editar: ${editingKnowledge.name}`}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    Artículo y notas en formato Markdown
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isKnowledgeDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveKnowledgeModal}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingKnowledge(null)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="block text-xs font-mono text-slate-300">
+                    Nombre de la Categoría
+                  </label>
+                  <input
+                    type="text"
+                    value={editingKnowledge.name}
+                    onChange={(e) =>
+                      setEditingKnowledge({ ...editingKnowledge, name: e.target.value })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-slate-300">Slug URL</label>
+                  <input
+                    type="text"
+                    value={editingKnowledge.slug || ""}
+                    onChange={(e) =>
+                      setEditingKnowledge({ ...editingKnowledge, slug: e.target.value })
+                    }
+                    placeholder="docker-cloud-architecture"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col justify-end">
+                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-white/10 bg-slate-900/60 text-xs font-mono text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={editingKnowledge.featured === 1}
+                      onChange={(e) =>
+                        setEditingKnowledge({
+                          ...editingKnowledge,
+                          featured: e.target.checked ? 1 : 0,
+                        })
+                      }
+                      className="accent-emerald-500 w-4 h-4 rounded cursor-pointer"
+                    />
+                    <span>Destacado en Portada (05 / Conocimientos)</span>
+                  </label>
+                </div>
+
+                {/* Markdown editor */}
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Contenido .md (Editor Markdown & Blog)
+                    </label>
+
+                    <div className="flex items-center gap-3">
+                      <label className="cursor-pointer flex items-center gap-1.5 text-xs font-mono text-slate-300 hover:text-emerald-400">
+                        <Upload size={12} />
+                        <span>Adjuntar Imagen</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleFileUpload(file, (url) => {
+                                const imgMarkdown = `\n\n![${file.name.replace(/\.[^/.]+$/, "")}](${url})\n\n`;
+                                setEditingKnowledge({
+                                  ...editingKnowledge,
+                                  content: (editingKnowledge.content || "") + imgMarkdown,
+                                });
+                              });
+                            }
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setPreviewKnowledgeDesc(!previewKnowledgeDesc)}
+                        className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:underline cursor-pointer"
+                      >
+                        <Eye size={12} />
+                        <span>{previewKnowledgeDesc ? "Editar código" : "Vista previa"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {previewKnowledgeDesc ? (
+                    <div className="w-full min-h-[220px] max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-slate-900/50 p-4 text-sm text-slate-200">
+                      <MarkdownRenderer content={editingKnowledge.content || ""} />
+                    </div>
+                  ) : (
+                    <textarea
+                      rows={10}
+                      value={editingKnowledge.content || ""}
+                      onChange={(e) =>
+                        setEditingKnowledge({ ...editingKnowledge, content: e.target.value })
+                      }
+                      placeholder="# Título del artículo&#10;&#10;Escribe aquí tus notas o guías técnicas..."
+                      className="w-full rounded-xl border border-white/10 bg-slate-900 p-3.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingKnowledge(null)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isKnowledgeDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isKnowledgeDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveKnowledgeModal}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OVERLAID MODAL 6: RED SOCIAL / ENLACE */}
+      {/* ========================================================================= */}
+      {editingSocial && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingSocial(null);
+          }}
+        >
+          <div className="relative w-full max-w-lg bg-[#0c1220] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-[#0c1220] border-b border-white/10 px-6 py-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Share2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
+                    {editingSocial.isNew ? "Nuevo Enlace" : `Editar: ${editingSocial.platform}`}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    Icono y dirección web
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+                {isSocialDirty && (
+                  <button
+                    type="button"
+                    onClick={handleSaveSocialModal}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                  >
+                    <Save size={14} />
+                    <span>{saving ? "Guardando..." : "Guardar"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingSocial(null)}
+                  className="p-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono text-slate-300">Nombre de la Plataforma</label>
+                <input
+                  type="text"
+                  value={editingSocial.platform}
+                  onChange={(e) =>
+                    setEditingSocial({ ...editingSocial, platform: e.target.value })
+                  }
+                  placeholder="GitHub, LinkedIn, Twitter..."
+                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono text-slate-300">URL del Enlace</label>
+                <input
+                  type="text"
+                  value={editingSocial.url}
+                  onChange={(e) => setEditingSocial({ ...editingSocial, url: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </div>
+
+              {/* Icon selector */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-mono text-slate-300">Icono Representativo</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-emerald-400 shrink-0">
+                    <DynamicIcon name={editingSocial.icon_name || "globe"} size={22} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIconTarget("social");
+                      setIconModalOpen(true);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-xs font-mono text-slate-200 transition-colors cursor-pointer"
+                  >
+                    <span>Cambiar Icono ({editingSocial.icon_name || "globe"})</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-20 bg-[#090d16] border-t border-white/10 px-6 py-3.5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setEditingSocial(null)}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+              >
+                {isSocialDirty ? "Descartar Cambios" : "Cerrar"}
+              </button>
+
+              {/* BOTÓN GUARDAR: APARECE ÚNICAMENTE SI SE HA MODIFICADO ALGO */}
+              {isSocialDirty ? (
+                <button
+                  type="button"
+                  onClick={handleSaveSocialModal}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                >
+                  <Save size={15} />
+                  <span>{saving ? "Guardando..." : "Guardar Cambios"}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-500">
+                  Sin cambios pendientes
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ICON PICKER MODAL (SUB-MODAL) */}
+      {/* ========================================================================= */}
       <IconPickerModal
         isOpen={iconModalOpen}
         onClose={() => {
           setIconModalOpen(false);
-          setCurrentSocialIndex(null);
-          setProjectLinkTarget(null);
+          setIconTarget(null);
         }}
-        selectedIcon={
-          currentSocialIndex !== null
-            ? socials[currentSocialIndex]?.icon_name
-            : projectLinkTarget !== null
-            ? (() => {
-                try {
-                  const links = JSON.parse(projects[projectLinkTarget.projectIdx]?.links || "[]");
-                  return links[projectLinkTarget.linkIdx]?.icon || "";
-                } catch {
-                  return "";
-                }
-              })()
-            : ""
-        }
         onSelect={(iconId) => {
-          if (currentSocialIndex !== null) {
-            const updated = [...socials];
-            updated[currentSocialIndex].icon_name = iconId;
-            setSocials(updated);
-          } else if (projectLinkTarget !== null) {
-            const { projectIdx, linkIdx } = projectLinkTarget;
-            const updatedProjects = [...projects];
-            let linksList: any[] = [];
+          if (iconTarget === "social" && editingSocial) {
+            setEditingSocial({ ...editingSocial, icon_name: iconId });
+          } else if (
+            typeof iconTarget === "object" &&
+            iconTarget !== null &&
+            "linkIdx" in iconTarget &&
+            editingProject
+          ) {
+            let curLinks: LinkItem[] = [];
             try {
-              linksList = JSON.parse(updatedProjects[projectIdx]?.links || "[]");
+              curLinks = JSON.parse(editingProject.links || "[]");
             } catch {
-              linksList = [];
+              curLinks = [];
             }
-            if (linksList[linkIdx]) {
-              linksList[linkIdx].icon = iconId;
-              updatedProjects[projectIdx].links = JSON.stringify(linksList);
-              setProjects(updatedProjects);
+            if (curLinks[iconTarget.linkIdx]) {
+              curLinks[iconTarget.linkIdx].icon = iconId;
+              setEditingProject({
+                ...editingProject,
+                links: JSON.stringify(curLinks),
+              });
             }
           }
           setIconModalOpen(false);
-          setCurrentSocialIndex(null);
-          setProjectLinkTarget(null);
+          setIconTarget(null);
         }}
       />
     </div>
