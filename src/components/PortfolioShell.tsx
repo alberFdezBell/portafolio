@@ -11,6 +11,8 @@ import { KnowledgeSection, KnowledgeCategoryItem } from "./KnowledgeSection";
 import { KnowledgeDetailView } from "./KnowledgeDetailView";
 import { Footer, SocialLinkItem } from "./Footer";
 import { ProjectDetailView } from "./ProjectDetailView";
+import { projectToSlug } from "@/lib/project-slug";
+import { categoryToSlug } from "@/lib/knowledge-slug";
 
 interface PortfolioShellProps {
   profile: any;
@@ -59,6 +61,10 @@ export function PortfolioShell({
       document.body.style.overflow = "hidden";
     }
 
+    // Update URL to the project's canonical URL without reloading the page
+    const slug = projectToSlug(proj.id, proj.title);
+    window.history.pushState({ projectSlug: slug }, "", `/project/${slug}`);
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsDetailOpen(true);
@@ -82,6 +88,9 @@ export function PortfolioShell({
       document.body.style.overflow = "";
     }
 
+    // Restore URL to the projects section anchor
+    window.history.pushState(null, "", "/#proyectos");
+
     projectCloseTimerRef.current = setTimeout(() => {
       setSelectedProject(null);
       if (typeof document !== "undefined") {
@@ -90,6 +99,50 @@ export function PortfolioShell({
       projectCloseTimerRef.current = null;
     }, 750);
   };
+
+  // Handle browser back/forward buttons while the slide overlay is open
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isDetailOpen) {
+        // User pressed back: close the project overlay without pushing another history entry
+        if (projectCloseTimerRef.current) clearTimeout(projectCloseTimerRef.current);
+
+        setIsDetailOpen(false);
+
+        if (typeof document !== "undefined") {
+          document.body.style.overflow = "";
+        }
+
+        projectCloseTimerRef.current = setTimeout(() => {
+          setSelectedProject(null);
+          if (typeof document !== "undefined") {
+            document.body.classList.remove("scrollbar-hidden");
+          }
+          projectCloseTimerRef.current = null;
+        }, 750);
+      } else if (isKnowledgeDetailOpen) {
+        // User pressed back: close the knowledge overlay
+        if (knowledgeCloseTimerRef.current) clearTimeout(knowledgeCloseTimerRef.current);
+
+        setIsKnowledgeDetailOpen(false);
+
+        if (typeof document !== "undefined") {
+          document.body.style.overflow = "";
+        }
+
+        knowledgeCloseTimerRef.current = setTimeout(() => {
+          setSelectedKnowledgeCategory(null);
+          if (typeof document !== "undefined") {
+            document.body.classList.remove("scrollbar-hidden");
+          }
+          knowledgeCloseTimerRef.current = null;
+        }, 750);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDetailOpen, isKnowledgeDetailOpen]);
 
   // --- KNOWLEDGE HANDLERS ---
   const handleSelectKnowledgeCategory = (cat: KnowledgeCategoryItem) => {
@@ -107,6 +160,10 @@ export function PortfolioShell({
       document.body.classList.add("scrollbar-hidden");
       document.body.style.overflow = "hidden";
     }
+
+    // Update URL to the category's canonical URL without reloading
+    const slug = categoryToSlug(cat.id, cat.name);
+    window.history.pushState({ categorySlug: slug }, "", `/knowledge/${slug}`);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -130,6 +187,9 @@ export function PortfolioShell({
     if (typeof document !== "undefined") {
       document.body.style.overflow = "";
     }
+
+    // Restore URL to the knowledge section anchor
+    window.history.pushState(null, "", "/#conocimientos");
 
     knowledgeCloseTimerRef.current = setTimeout(() => {
       setSelectedKnowledgeCategory(null);

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { projectToSlug } from "@/lib/project-slug";
 import { ScrollReveal } from "./ScrollReveal";
 
 export interface MediaItem {
@@ -122,10 +123,11 @@ export function ProjectsSection({ projects = [], onSelectProject }: ProjectsSect
                     aria-hidden={pageIndex !== currentPage}
                   >
                     {pageProjects.map((proj) => {
+                      const slug = projectToSlug(proj.id, proj.title);
                       return (
-                        <article
+                        <a
                           key={proj.id}
-                          role="button"
+                          href={`/project/${slug}`}
                           tabIndex={pageIndex === currentPage ? 0 : -1}
                           onClick={(e) => {
                             e.preventDefault();
@@ -164,7 +166,7 @@ export function ProjectsSection({ projects = [], onSelectProject }: ProjectsSect
                               />
                             </span>
                           </div>
-                        </article>
+                        </a>
                       );
                     })}
                   </div>

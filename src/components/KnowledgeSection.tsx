@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
+import { categoryToSlug } from "@/lib/knowledge-slug";
 
 export interface KnowledgeCategoryItem {
   id: number;
@@ -72,26 +73,38 @@ export function KnowledgeSection({
                     className="w-full shrink-0 grid grid-cols-1 gap-4"
                     aria-hidden={pageIndex !== currentPage}
                   >
-                    {pageCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        tabIndex={pageIndex === currentPage ? 0 : -1}
-                        onClick={() => onSelectCategory(cat)}
-                        aria-label={`Ver categoría de conocimiento: ${cat.name}`}
-                        className="group w-full p-6 sm:p-7 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/90 hover:border-emerald-500/40 transition-all duration-200 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-sm active:scale-[0.99]"
-                      >
-                        <span className="text-lg sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
-                          {cat.name}
-                        </span>
-                        <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
-                          <ChevronRight
-                            size={20}
-                            className="group-hover:translate-x-1 transition-transform"
-                          />
-                        </div>
-                      </button>
-                    ))}
+                    {pageCategories.map((cat) => {
+                      const slug = categoryToSlug(cat.id, cat.name);
+                      return (
+                        <a
+                          key={cat.id}
+                          href={`/knowledge/${slug}`}
+                          tabIndex={pageIndex === currentPage ? 0 : -1}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onSelectCategory(cat);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onSelectCategory(cat);
+                            }
+                          }}
+                          aria-label={`Ver categoría de conocimiento: ${cat.name}`}
+                          className="group w-full p-6 sm:p-7 rounded-xl border border-white/10 bg-slate-900/40 hover:bg-slate-900/90 hover:border-emerald-500/40 transition-all duration-200 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-sm active:scale-[0.99]"
+                        >
+                          <span className="text-lg sm:text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors tracking-tight">
+                            {cat.name}
+                          </span>
+                          <div className="flex items-center gap-2 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0">
+                            <ChevronRight
+                              size={20}
+                              className="group-hover:translate-x-1 transition-transform"
+                            />
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
