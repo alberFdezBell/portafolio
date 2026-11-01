@@ -76,7 +76,7 @@ describe("ProjectsSection", () => {
     expect(screen.queryByText("Plataforma completa de comercio electrónico con Stripe.")).not.toBeInTheDocument();
 
     // Clicking a project card calls onSelectProject
-    const card = screen.getByRole("button", {
+    const card = screen.getByRole("link", {
       name: /ver detalles del proyecto sistema e-commerce/i,
     });
     fireEvent.click(card);

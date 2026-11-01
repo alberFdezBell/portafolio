@@ -75,7 +75,7 @@ describe("Knowledge Components", () => {
       expect(screen.queryByLabelText(/página siguiente/i)).not.toBeInTheDocument();
 
       // Clicking a category calls onSelectCategory
-      const card = screen.getByRole("button", {
+      const card = screen.getByRole("link", {
         name: /ver categoría de conocimiento: arquitectura cloud & docker/i,
       });
       fireEvent.click(card);

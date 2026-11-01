@@ -4,11 +4,12 @@ import { projectToSlug } from "@/lib/project-slug";
 import { categoryToSlug } from "@/lib/knowledge-slug";
 import { ProjectItem } from "@/components/ProjectsSection";
 import { KnowledgeCategoryItem } from "@/components/KnowledgeSection";
+import { getSiteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1886";
+  const siteUrl = getSiteUrl();
 
   const entries: MetadataRoute.Sitemap = [
     {

@@ -5,6 +5,11 @@ import { getDb } from "@/lib/db";
 import { categorySlugToId } from "@/lib/knowledge-slug";
 import { KnowledgeCategoryItem } from "@/components/KnowledgeSection";
 import { KnowledgePageClient } from "./KnowledgePageClient";
+import {
+  getSiteUrl,
+  generateKnowledgeSchema,
+  generateKnowledgeBreadcrumbSchema,
+} from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = getCategory(slug);
   if (!category) return { title: "Categoría no encontrada" };
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1886";
+  const siteUrl = getSiteUrl();
 
   // Use first 160 chars of content as description, stripping markdown
   const plainText = (category.content || "")
@@ -69,5 +74,21 @@ export default async function KnowledgePage({ params }: Props) {
   const category = getCategory(slug);
   if (!category) notFound();
 
-  return <KnowledgePageClient category={category} />;
+  const siteUrl = getSiteUrl();
+  const articleSchema = generateKnowledgeSchema(category, siteUrl, slug);
+  const breadcrumbSchema = generateKnowledgeBreadcrumbSchema(category, siteUrl, slug);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <KnowledgePageClient category={category} />
+    </>
+  );
 }

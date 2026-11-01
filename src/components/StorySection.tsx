@@ -170,8 +170,15 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
                 </div>
               </div>
 
+              {/* Semantic Full Text for Search Engine Crawlers & Screen Readers */}
+              <div className="sr-only">
+                {paragraphs.map((p, idx) => (
+                  <p key={idx}>{p}</p>
+                ))}
+              </div>
+
               {/* Text Paragraphs wrapping around the image with Blinking Terminal Cursor */}
-              <div className="space-y-5 text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
+              <div className="space-y-5 text-slate-300 text-base sm:text-lg leading-relaxed font-normal" aria-hidden="true">
                 {paragraphData.map((data, index) => {
                   const showCursorHere =
                     index === activeCursorPIndex && charIndex < fullText.length;

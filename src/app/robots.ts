@@ -1,14 +1,15 @@
 import { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1886";
+  const siteUrl = getSiteUrl();
 
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api/admin/"],
+        disallow: ["/admin", "/api/admin/", "/login"],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

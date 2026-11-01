@@ -71,9 +71,12 @@ export function Hero({
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[450px] h-[280px] bg-cyan-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-      {/* Main Single-Line Headline (Centered Fullscreen) */}
-      <div className="max-w-5xl mx-auto px-4 text-center z-10">
-        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight flex flex-wrap items-center justify-center">
+      {/* Semantic Accessible H1 for SEO Crawlers & Screen Readers */}
+      <h1 className="sr-only">{fullText}</h1>
+
+      {/* Main Single-Line Headline (Centered Fullscreen Typewriter Display) */}
+      <div className="max-w-5xl mx-auto px-4 text-center z-10" aria-hidden="true">
+        <div className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight flex flex-wrap items-center justify-center">
           <span>{typedPrefix}</span>
           {typedName && (
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 ml-2 sm:ml-3">
@@ -82,7 +85,7 @@ export function Hero({
           )}
           {/* Terminal Blinking Cursor at typing position */}
           <span className="inline-block w-2 sm:w-3.5 h-7 sm:h-11 lg:h-14 bg-emerald-400 terminal-cursor ml-2 sm:ml-3 align-middle shrink-0" />
-        </h1>
+        </div>
       </div>
 
       {/* Bottom Interactive Arrow Button (Appears when typing completes) */}

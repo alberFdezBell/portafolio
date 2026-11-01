@@ -6,7 +6,7 @@ import { EducationItem } from "@/components/EducationSection";
 import { KnowledgeCategoryItem } from "@/components/KnowledgeSection";
 import { SocialLinkItem } from "@/components/Footer";
 import { PortfolioShell } from "@/components/PortfolioShell";
-import { generatePersonSchema, generateWebSiteSchema } from "@/lib/seo";
+import { generatePersonSchema, generateWebSiteSchema, getSiteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +46,7 @@ export default function HomePage() {
     .prepare("SELECT * FROM social_links ORDER BY order_num ASC, id ASC")
     .all() as SocialLinkItem[]) || [];
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1886";
+  const siteUrl = getSiteUrl();
   const personJsonLd = generatePersonSchema(profile, siteUrl);
   const websiteJsonLd = generateWebSiteSchema(profile, siteUrl);
 

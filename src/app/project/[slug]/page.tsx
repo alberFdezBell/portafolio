@@ -5,6 +5,11 @@ import { getDb } from "@/lib/db";
 import { slugToId } from "@/lib/project-slug";
 import { ProjectItem } from "@/components/ProjectsSection";
 import { ProjectPageClient } from "./ProjectPageClient";
+import {
+  getSiteUrl,
+  generateProjectSchema,
+  generateProjectBreadcrumbSchema,
+} from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +21,11 @@ function getProject(slug: string): ProjectItem | null {
   const id = slugToId(slug);
   if (!id) return null;
   const db = getDb();
-  return (db
-    .prepare("SELECT * FROM projects WHERE id = ?")
-    .get(id) as ProjectItem) || null;
+  return (
+    (db
+      .prepare("SELECT * FROM projects WHERE id = ?")
+      .get(id) as ProjectItem) || null
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -26,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const project = getProject(slug);
   if (!project) return { title: "Proyecto no encontrado" };
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1886";
+  const siteUrl = getSiteUrl();
 
   let techList: string[] = [];
   try {
@@ -41,7 +48,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let primaryImageUrl: string | undefined;
   try {
     const media = JSON.parse(project.media || "[]");
-    const primary = media.find((m: any) => m.is_primary && m.type === "image") || media.find((m: any) => m.type === "image");
+    const primary =
+      media.find((m: any) => m.is_primary && m.type === "image") ||
+      media.find((m: any) => m.type === "image");
     primaryImageUrl = primary?.url || project.image_url || undefined;
   } catch {
     primaryImageUrl = project.image_url || undefined;
@@ -82,5 +91,21 @@ export default async function ProjectPage({ params }: Props) {
   const project = getProject(slug);
   if (!project) notFound();
 
-  return <ProjectPageClient project={project} />;
+  const siteUrl = getSiteUrl();
+  const projectSchema = generateProjectSchema(project, siteUrl, slug);
+  const breadcrumbSchema = generateProjectBreadcrumbSchema(project, siteUrl, slug);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ProjectPageClient project={project} />
+    </>
+  );
 }
