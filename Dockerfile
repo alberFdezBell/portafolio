@@ -30,16 +30,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=1886
 ENV HOSTNAME="0.0.0.0"
 
-# Directories for persistence
-RUN mkdir -p /app/data /app/public/uploads && \
-    addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs && \
-    chown -R nextjs:nodejs /app/data /app/public/uploads
+# Create application user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy build artifacts
-COPY --from=builder /app/public ./public
+# Copy build artifacts with appropriate ownership
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Directories for persistence owned by nextjs
+RUN mkdir -p /app/data /app/public/uploads && \
+    chown -R nextjs:nodejs /app/data /app/public/uploads
 
 USER nextjs
 
