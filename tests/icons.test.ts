@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getIconRenderer, POPULAR_ICONS } from "@/lib/icons-catalog";
+import { getIconRenderer } from "@/lib/icons-catalog";
 
 describe("CDN Icons Catalog & Resolver", () => {
   it("resolves popular SimpleIcons via CDN url", () => {
