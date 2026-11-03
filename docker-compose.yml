@@ -13,6 +13,7 @@ services:
       - AUTH_SECRET=${AUTH_SECRET:-super-secret-key-replace-in-portainer-1886}
       - TOTP_SECRET=${TOTP_SECRET:-}
       - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:1886}
+      - RESTRICT_SENSITIVE_ROUTES_TO_LOCAL=${RESTRICT_SENSITIVE_ROUTES_TO_LOCAL:-true}
     volumes:
       - portfolio_data:/app/data
       - portfolio_uploads:/app/public/uploads
