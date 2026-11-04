@@ -4,11 +4,14 @@ import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { categorySlugToId } from "@/lib/knowledge-slug";
 import { KnowledgeCategoryItem } from "@/components/KnowledgeSection";
-import { KnowledgePageClient } from "./KnowledgePageClient";
+import { getPortfolioData } from "@/lib/portfolio-data";
+import { PortfolioShell } from "@/components/PortfolioShell";
 import {
   getSiteUrl,
   generateKnowledgeSchema,
   generateKnowledgeBreadcrumbSchema,
+  generatePersonSchema,
+  generateWebSiteSchema,
 } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -74,12 +77,23 @@ export default async function KnowledgePage({ params }: Props) {
   const category = getCategory(slug);
   if (!category) notFound();
 
+  const portfolioData = getPortfolioData();
   const siteUrl = getSiteUrl();
   const articleSchema = generateKnowledgeSchema(category, siteUrl, slug);
   const breadcrumbSchema = generateKnowledgeBreadcrumbSchema(category, siteUrl, slug);
+  const personJsonLd = generatePersonSchema(portfolioData.profile, siteUrl);
+  const websiteJsonLd = generateWebSiteSchema(portfolioData.profile, siteUrl);
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
@@ -88,7 +102,10 @@ export default async function KnowledgePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <KnowledgePageClient category={category} />
+      <PortfolioShell
+        {...portfolioData}
+        initialKnowledgeCategory={category}
+      />
     </>
   );
 }

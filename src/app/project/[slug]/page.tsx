@@ -4,11 +4,14 @@ import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { slugToId } from "@/lib/project-slug";
 import { ProjectItem } from "@/components/ProjectsSection";
-import { ProjectPageClient } from "./ProjectPageClient";
+import { getPortfolioData } from "@/lib/portfolio-data";
+import { PortfolioShell } from "@/components/PortfolioShell";
 import {
   getSiteUrl,
   generateProjectSchema,
   generateProjectBreadcrumbSchema,
+  generatePersonSchema,
+  generateWebSiteSchema,
 } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -91,12 +94,23 @@ export default async function ProjectPage({ params }: Props) {
   const project = getProject(slug);
   if (!project) notFound();
 
+  const portfolioData = getPortfolioData();
   const siteUrl = getSiteUrl();
   const projectSchema = generateProjectSchema(project, siteUrl, slug);
   const breadcrumbSchema = generateProjectBreadcrumbSchema(project, siteUrl, slug);
+  const personJsonLd = generatePersonSchema(portfolioData.profile, siteUrl);
+  const websiteJsonLd = generateWebSiteSchema(portfolioData.profile, siteUrl);
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
@@ -105,7 +119,10 @@ export default async function ProjectPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <ProjectPageClient project={project} />
+      <PortfolioShell
+        {...portfolioData}
+        initialProject={project}
+      />
     </>
   );
 }

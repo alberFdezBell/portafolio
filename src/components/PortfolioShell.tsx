@@ -21,6 +21,8 @@ interface PortfolioShellProps {
   education: EducationItem[];
   knowledgeCategories?: KnowledgeCategoryItem[];
   socialLinks: SocialLinkItem[];
+  initialProject?: ProjectItem | null;
+  initialKnowledgeCategory?: KnowledgeCategoryItem | null;
 }
 
 export function PortfolioShell({
@@ -30,19 +32,42 @@ export function PortfolioShell({
   education,
   knowledgeCategories = [],
   socialLinks,
+  initialProject = null,
+  initialKnowledgeCategory = null,
 }: PortfolioShellProps) {
   // Project Detail state
-  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(
+    () => initialProject
+  );
+  const [isDetailOpen, setIsDetailOpen] = useState(() => !!initialProject);
   const projectCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProjectOpeningRef = useRef(false);
 
   // Knowledge Detail state
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] =
-    useState<KnowledgeCategoryItem | null>(null);
-  const [isKnowledgeDetailOpen, setIsKnowledgeDetailOpen] = useState(false);
+    useState<KnowledgeCategoryItem | null>(() => initialKnowledgeCategory);
+  const [isKnowledgeDetailOpen, setIsKnowledgeDetailOpen] = useState(
+    () => !!initialKnowledgeCategory
+  );
   const knowledgeCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isKnowledgeOpeningRef = useRef(false);
+
+  // Prepare background scroll position if starting directly on a detail view
+  useEffect(() => {
+    if (initialKnowledgeCategory || initialProject) {
+      if (typeof document !== "undefined") {
+        document.body.classList.add("scrollbar-hidden");
+        document.body.style.overflow = "hidden";
+      }
+      if (initialKnowledgeCategory) {
+        const el = document.getElementById("conocimientos");
+        if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      } else if (initialProject) {
+        const el = document.getElementById("proyectos");
+        if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      }
+    }
+  }, [initialKnowledgeCategory, initialProject]);
 
   // --- PROJECT DETAIL HANDLERS ---
   const handleOpenProject = (proj: ProjectItem) => {
@@ -88,6 +113,9 @@ export function PortfolioShell({
       document.body.style.overflow = "";
     }
 
+    const el = document.getElementById("proyectos");
+    if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+
     // Restore URL to the projects section anchor
     window.history.pushState(null, "", "/#proyectos");
 
@@ -113,6 +141,9 @@ export function PortfolioShell({
           document.body.style.overflow = "";
         }
 
+        const el = document.getElementById("proyectos");
+        if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+
         projectCloseTimerRef.current = setTimeout(() => {
           setSelectedProject(null);
           if (typeof document !== "undefined") {
@@ -129,6 +160,9 @@ export function PortfolioShell({
         if (typeof document !== "undefined") {
           document.body.style.overflow = "";
         }
+
+        const el = document.getElementById("conocimientos");
+        if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
 
         knowledgeCloseTimerRef.current = setTimeout(() => {
           setSelectedKnowledgeCategory(null);
@@ -187,6 +221,9 @@ export function PortfolioShell({
     if (typeof document !== "undefined") {
       document.body.style.overflow = "";
     }
+
+    const el = document.getElementById("conocimientos");
+    if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior });
 
     // Restore URL to the knowledge section anchor
     window.history.pushState(null, "", "/#conocimientos");

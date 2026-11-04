@@ -81,18 +81,13 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
           ),
           hr: () => <hr className="my-6 border-white/10" />,
           img: ({ src, alt }) => (
-            <span className="block my-6 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60 shadow-lg">
+            <span className="block my-4">
               <img
                 src={typeof src === "string" ? src : ""}
-                alt={alt || "Imagen"}
-                className="w-full h-auto max-h-[550px] object-contain mx-auto"
+                alt={alt || ""}
+                className="max-w-full h-auto"
                 loading="lazy"
               />
-              {alt && (
-                <span className="block py-2 px-3 text-center text-xs font-mono text-slate-400 bg-slate-900/60 border-t border-white/5">
-                  {alt}
-                </span>
-              )}
             </span>
           ),
           table: ({ children }) => (
