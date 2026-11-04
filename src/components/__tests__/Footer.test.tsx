@@ -64,6 +64,27 @@ describe("Footer component", () => {
     expect(mailtoLink).toHaveAttribute("href", "mailto:dev@example.com");
   });
 
+  it("normalizes external social links without protocol to include https://", () => {
+    const unnormalizedLinks: SocialLinkItem[] = [
+      {
+        id: 3,
+        platform: "LinkedIn",
+        url: "www.linkedin.com/in/alberto-fernandez-bellido",
+        icon_name: "linkedin",
+      },
+    ];
+
+    render(
+      <Footer
+        email="dev@example.com"
+        socialLinks={unnormalizedLinks}
+      />
+    );
+
+    const link = screen.getByRole("link", { name: /LinkedIn/i });
+    expect(link).toHaveAttribute("href", "https://www.linkedin.com/in/alberto-fernandez-bellido");
+  });
+
   it("renders copyright with current year and brand identity", () => {
     const currentYear = new Date().getFullYear();
     render(

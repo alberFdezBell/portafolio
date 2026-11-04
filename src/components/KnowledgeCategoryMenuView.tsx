@@ -61,8 +61,8 @@ export function KnowledgeCategoryMenuView({
         <div className="max-w-4xl mx-auto px-6 sm:px-12 py-10 sm:py-16 space-y-10">
           {/* Cabecera */}
           <div className="space-y-4 pb-8">
-            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
-              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+            <div className="text-sm sm:text-base font-mono font-medium tracking-wider text-emerald-400 uppercase flex items-center gap-2.5">
+              <span className="w-6 sm:w-8 h-px bg-emerald-400/70" aria-hidden="true" />
               <span>05 / Conocimientos</span>
             </div>
           </div>

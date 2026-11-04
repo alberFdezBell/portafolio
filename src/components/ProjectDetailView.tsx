@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { DynamicIcon } from "./DynamicIcon";
+import { normalizeExternalUrl } from "@/lib/seo";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ProjectItem, MediaItem, LinkItem } from "./ProjectsSection";
 
@@ -232,8 +233,8 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
         {/* Cabecera del proyecto: fijada arriba a la izquierda en todo el ancho superior como en conocimientos */}
         <div className="w-full px-6 sm:px-12 pt-8 sm:pt-10 pb-6 border-b border-white/10">
           <div className="flex flex-col items-start gap-3">
-            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
-              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+            <div className="text-sm sm:text-base font-mono font-medium tracking-wider text-emerald-400 uppercase flex items-center gap-2.5">
+              <span className="w-6 sm:w-8 h-px bg-emerald-400/70" aria-hidden="true" />
               <span>03 / Proyectos</span>
             </div>
 
@@ -261,7 +262,7 @@ export function ProjectDetailView({ project, onClose }: ProjectDetailViewProps) 
                 {linksList.map((link, idx) => (
                   <a
                     key={idx}
-                    href={link.url}
+                    href={normalizeExternalUrl(link.url)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-300 text-xs sm:text-sm font-mono text-white transition-all active:scale-95 shadow-sm"

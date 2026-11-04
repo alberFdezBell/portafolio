@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Mail, Check, Copy, Send, ArrowUpRight } from "lucide-react";
 import { DynamicIcon } from "./DynamicIcon";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "./ScrollReveal";
+import { normalizeExternalUrl } from "@/lib/seo";
 
 export interface SocialLinkItem {
   id: number;
@@ -125,7 +126,7 @@ export function Footer({
                 {socialLinks.map((social) => (
                   <StaggerItem key={social.id} yOffset={12}>
                     <a
-                      href={social.url}
+                      href={normalizeExternalUrl(social.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center py-3.5 group text-slate-300 hover:text-white transition-colors"

@@ -91,14 +91,14 @@ export function ProjectsSection({ projects = [], onSelectProject }: ProjectsSect
   }, [totalPages, currentPage]);
 
   return (
-    <section id="proyectos" className="scroll-mt-20 py-28 border-t border-white/5 relative">
+    <section id="proyectos" className="scroll-mt-20 pt-16 sm:pt-20 pb-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 sm:mb-14">
             <div>
-              <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
-                <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+              <div className="text-sm sm:text-base font-mono font-medium tracking-wider text-emerald-400 uppercase flex items-center gap-2.5">
+                <span className="w-6 sm:w-8 h-px bg-emerald-400/70" aria-hidden="true" />
                 <span>03 / Proyectos</span>
               </div>
             </div>

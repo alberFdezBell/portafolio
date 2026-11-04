@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generatePersonSchema, generateWebSiteSchema, ProfileData } from "@/lib/seo";
+import { generatePersonSchema, generateWebSiteSchema, normalizeExternalUrl, ProfileData } from "@/lib/seo";
 
 describe("SEO & Structured Data", () => {
   const mockProfile: ProfileData = {
@@ -35,5 +35,28 @@ describe("SEO & Structured Data", () => {
     expect(schema["@type"]).toBe("WebSite");
     expect(schema.name).toContain("Alberto Fernández Bellido");
     expect(schema.url).toBe(siteUrl);
+  });
+
+  describe("normalizeExternalUrl", () => {
+    it("prepends https:// when missing protocol", () => {
+      expect(normalizeExternalUrl("www.linkedin.com/in/alberto")).toBe("https://www.linkedin.com/in/alberto");
+      expect(normalizeExternalUrl("github.com/alberFdezBell")).toBe("https://github.com/alberFdezBell");
+    });
+
+    it("preserves urls already starting with http://, https://, or mailto:", () => {
+      expect(normalizeExternalUrl("https://aferbel.es")).toBe("https://aferbel.es");
+      expect(normalizeExternalUrl("http://localhost:1886")).toBe("http://localhost:1886");
+      expect(normalizeExternalUrl("mailto:test@example.com")).toBe("mailto:test@example.com");
+    });
+
+    it("handles protocol-relative urls", () => {
+      expect(normalizeExternalUrl("//cdn.example.com/asset")).toBe("https://cdn.example.com/asset");
+    });
+
+    it("handles null, undefined or empty strings safely", () => {
+      expect(normalizeExternalUrl("")).toBe("");
+      expect(normalizeExternalUrl(null)).toBe("");
+      expect(normalizeExternalUrl(undefined)).toBe("");
+    });
   });
 });

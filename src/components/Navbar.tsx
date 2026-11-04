@@ -16,7 +16,8 @@ export function Navbar({ className = "" }: NavbarProps) {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -43,12 +44,14 @@ export function Navbar({ className = "" }: NavbarProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const isVisible = scrolled || mobileMenuOpen;
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-[background-color,border-color,padding,box-shadow] duration-300 ${
-        scrolled
-          ? "bg-[#090d16]/85 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/20 py-3"
-          : "bg-transparent py-5"
+      className={`fixed top-0 left-0 right-0 z-40 bg-[#090d16]/85 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/20 py-3 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        isVisible
+          ? "translate-y-0 pointer-events-auto"
+          : "-translate-y-full pointer-events-none"
       } ${className}`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">

@@ -24,7 +24,7 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
   // Synchronize start trigger: start when Hero has completed AND section is in view
   useEffect(() => {
     // If user prefers reduced motion, show full text immediately
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setHasStarted(true);
       setCharIndex(fullText.length);
       return;
@@ -136,14 +136,14 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
   });
 
   return (
-    <section id="historia" className="scroll-mt-20 py-28 border-t border-white/5 relative">
+    <section id="historia" className="scroll-mt-20 pt-16 sm:pt-20 pb-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col items-start mb-6">
-            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
-              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+          <div className="flex flex-col items-start mb-12 sm:mb-14">
+            <div className="text-sm sm:text-base font-mono font-medium tracking-wider text-emerald-400 uppercase flex items-center gap-2.5">
+              <span className="w-6 sm:w-8 h-px bg-emerald-400/70" aria-hidden="true" />
               <span>01 / Sobre mí</span>
             </div>
           </div>
@@ -158,14 +158,17 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
             </div>
 
             <div className="relative">
-              {/* Profile Photo Floated Right on sm+ screens; hidden on mobile (compacta, sin borde, estática sin zoom) */}
-              <div className="hidden sm:block sm:float-right sm:ml-8 sm:mb-4 w-44 sm:w-48 md:w-52 max-w-full">
-                <div className="overflow-hidden rounded-xl">
+              {/* Profile Photo Floated Right on sm+ screens; hidden on mobile (aspect ratio 817/1448 pre-reservado para CLS cero) */}
+              <div className="hidden sm:block sm:float-right sm:ml-8 sm:mb-4 w-44 sm:w-48 md:w-52 max-w-full aspect-[817/1448]">
+                <div className="overflow-hidden rounded-xl w-full h-full">
                   <img
                     src={avatarUrl || "/alberto01.webp"}
                     alt={`Foto de ${name}`}
-                    className="w-full h-auto object-cover rounded-xl"
-                    loading="lazy"
+                    width={817}
+                    height={1448}
+                    className="w-full h-full object-cover rounded-xl"
+                    loading="eager"
+                    decoding="sync"
                   />
                 </div>
               </div>
@@ -190,10 +193,9 @@ export function StorySection({ aboutStory, avatarUrl, name }: StorySectionProps)
                       {data.typedPart && <span>{data.typedPart}</span>}
 
                       {(showCursorHere || isCompletedText) && (
-                        <span
-                          className="inline-block w-2 sm:w-2.5 h-4 sm:h-5 bg-emerald-400 terminal-cursor ml-0.5 mr-0.5 align-middle shrink-0"
-                          aria-hidden="true"
-                        />
+                        <span className="relative inline-block w-0 h-0 overflow-visible" aria-hidden="true">
+                          <span className="inline-block w-2 sm:w-2.5 h-4 sm:h-5 bg-emerald-400 terminal-cursor align-middle ml-0.5 -translate-y-0.5 shrink-0" />
+                        </span>
                       )}
 
                       {data.untypedPart && (

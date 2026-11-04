@@ -16,8 +16,8 @@ export function ScrollReveal({
   children,
   className = "",
   delay = 0,
-  duration = 0.6,
-  yOffset = 22,
+  duration = 0.5,
+  yOffset = 14,
 }: ScrollRevealProps) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -30,7 +30,7 @@ export function ScrollReveal({
       className={className}
       initial={{ opacity: 0, y: yOffset }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-30px" }}
+      viewport={{ once: true, margin: "0px" }}
       transition={{
         duration,
         delay,
@@ -64,7 +64,7 @@ export function StaggerContainer({
       className={className}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-30px" }}
+      viewport={{ once: true, margin: "0px" }}
       variants={{
         hidden: {},
         visible: {
@@ -82,7 +82,7 @@ export function StaggerContainer({
 export function StaggerItem({
   children,
   className = "",
-  yOffset = 20,
+  yOffset = 14,
 }: {
   children: React.ReactNode;
   className?: string;

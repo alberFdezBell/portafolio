@@ -16,6 +16,28 @@ export function getSiteUrl(): string {
   return envUrl.trim().replace(/\/+$/, "");
 }
 
+/**
+ * Normaliza enlaces externos garantizando que incluyan protocolo (https:// por defecto).
+ * Evita que URLs como 'www.linkedin.com/...' se traten erróneamente como relativas.
+ */
+export function normalizeExternalUrl(url?: string | null): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("mailto:") ||
+    trimmed.startsWith("tel:")
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  return `https://${trimmed}`;
+}
+
 export function generatePersonSchema(profile: ProfileData, siteUrl: string) {
   const cleanUrl = siteUrl.replace(/\/+$/, "");
   return {

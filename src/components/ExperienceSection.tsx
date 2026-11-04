@@ -20,6 +20,76 @@ interface ExperienceSectionProps {
   experiences: ExperienceItem[];
 }
 
+function ExperienceTechList({ skills }: { skills: string[] }) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [rowEndIndices, setRowEndIndices] = React.useState<Set<number>>(
+    () => new Set([skills.length - 1])
+  );
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const calculateRowEnds = () => {
+      const items = Array.from(el.children) as HTMLElement[];
+      if (items.length === 0) return;
+
+      const ends = new Set<number>();
+      for (let i = 0; i < items.length - 1; i++) {
+        // If the next item starts on a new line (higher offsetTop), current item ends the row
+        if (items[i + 1].offsetTop > items[i].offsetTop) {
+          ends.add(i);
+        }
+      }
+      ends.add(items.length - 1);
+      setRowEndIndices(ends);
+    };
+
+    calculateRowEnds();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        calculateRowEnds();
+      });
+      resizeObserver.observe(el);
+    }
+
+    window.addEventListener("resize", calculateRowEnds, { passive: true });
+
+    return () => {
+      if (resizeObserver) resizeObserver.disconnect();
+      window.removeEventListener("resize", calculateRowEnds);
+    };
+  }, [skills]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex-1 flex flex-wrap items-center gap-y-1.5 text-slate-400"
+    >
+      {skills.map((skill, idx) => {
+        const isRowEnd = rowEndIndices.has(idx);
+        return (
+          <span key={idx} className="inline-flex items-center">
+            <span className="hover:text-emerald-300 transition-colors">
+              {skill}
+            </span>
+            {!isRowEnd && (
+              <span
+                className="text-emerald-500/50 mx-2 select-none"
+                aria-hidden="true"
+              >
+                /
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ExperienceSection({ experiences }: ExperienceSectionProps) {
   const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
 
@@ -31,14 +101,14 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
   };
 
   return (
-    <section id="experiencia" className="scroll-mt-20 py-28 border-t border-white/5 relative">
+    <section id="experiencia" className="scroll-mt-20 pt-16 sm:pt-20 pb-28 border-t border-white/5 relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Editorial Section Header */}
         <ScrollReveal yOffset={20}>
-          <div className="flex flex-col items-start mb-6">
-            <div className="text-xs font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
-              <span className="w-5 h-px bg-emerald-400/60" aria-hidden="true" />
+          <div className="flex flex-col items-start mb-12 sm:mb-14">
+            <div className="text-sm sm:text-base font-mono font-medium tracking-wider text-emerald-400 uppercase flex items-center gap-2.5">
+              <span className="w-6 sm:w-8 h-px bg-emerald-400/70" aria-hidden="true" />
               <span>02 / Carrera y Experiencia</span>
             </div>
           </div>
@@ -136,18 +206,13 @@ export function ExperienceSection({ experiences }: ExperienceSectionProps) {
                       </div>
                     </div>
 
-                    {/* Tech stack as clean inline tags (no nested pill containers) */}
+                    {/* Tech stack as clean inline tags aligned in their own column */}
                     {parsedSkills.length > 0 && (
-                      <div className="pt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-xs text-slate-400">
-                        <span className="text-slate-600 font-semibold">Tech:</span>
-                        {parsedSkills.map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="text-slate-400 hover:text-emerald-300 transition-colors"
-                          >
-                            <span className="text-emerald-500/50">/</span> {skill}
-                          </span>
-                        ))}
+                      <div className="pt-2 flex items-start gap-2.5 sm:gap-3 font-mono text-xs text-slate-400">
+                        <span className="text-slate-600 font-semibold shrink-0 select-none pt-0.5">
+                          Tech:
+                        </span>
+                        <ExperienceTechList skills={parsedSkills} />
                       </div>
                     )}
                   </div>
