@@ -81,14 +81,12 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
           ),
           hr: () => <hr className="my-6 border-white/10" />,
           img: ({ src, alt }) => (
-            <span className="block my-4">
-              <img
-                src={typeof src === "string" ? src : ""}
-                alt={alt || ""}
-                className="max-w-full h-auto"
-                loading="lazy"
-              />
-            </span>
+            <img
+              src={typeof src === "string" ? src : ""}
+              alt={alt || ""}
+              className="inline-block max-w-full h-auto align-middle my-2 mr-3 last:mr-0"
+              loading="lazy"
+            />
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto my-5 rounded-lg border border-white/10">
